@@ -1,0 +1,20 @@
+# dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# environment files — never commit secrets
+.env
+.env.local
+.env.*.local
+
+# misc
+.DS_Store
+*.tsbuildinfo
+
+# local dev database
+local-daily.db
+local-daily.db-shm
+local-daily.db-wal

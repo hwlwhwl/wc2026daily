@@ -1,0 +1,2361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚽ WC2026 Daily Pick'em</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+:root{
+  --bg:#0a1628;--bg-card:#112a45;--bg-input:#0d1f35;--bg-tint:rgba(255,255,255,.05);
+  --text:#f1f5f9;--text-strong:#fff;--text-muted:#94a3b8;--text-faint:#64748b;
+  --border:rgba(255,255,255,.08);--border-soft:rgba(255,255,255,.05);--border-strong:rgba(255,255,255,.2);
+  --accent:#16a34a;--accent-h:#15803d;--shadow:none;
+}
+body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,sans-serif;min-height:100vh;}
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
+input[type=number]{-moz-appearance:textfield;}
+/* Goal counter */
+.goal-cell{display:flex;flex-direction:column;align-items:center;gap:0;}
+.goal-frame{position:relative;width:4.5rem;height:2.25rem;border:3px solid #fff;border-bottom:none;
+  border-radius:2px 2px 0 0;overflow:hidden;
+  background:repeating-linear-gradient(90deg,rgba(255,255,255,.35) 0,rgba(255,255,255,.35) 1px,transparent 1px,transparent 11px),
+             repeating-linear-gradient(0deg,rgba(255,255,255,.35) 0,rgba(255,255,255,.35) 1px,transparent 1px,transparent 8px);}
+.score-disp{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:1.3rem;font-weight:900;font-family:'Courier New',monospace;
+  text-shadow:0 0 8px rgba(0,0,0,.9),0 1px 4px rgba(0,0,0,.7);user-select:none;}
+.goal-btns{display:flex;gap:3px;margin-top:3px;}
+.goal-btn{width:1.6rem;height:1.1rem;border:none;border-radius:3px;background:rgba(255,255,255,.1);
+  color:#fff;font-size:.95rem;font-weight:700;cursor:pointer;line-height:1;
+  display:flex;align-items:center;justify-content:center;transition:background .12s,transform .08s;}
+.goal-btn:hover{background:rgba(255,255,255,.22);}
+.goal-btn:active{transform:scale(.88);}
+/* Tabs */
+.tab{padding:.375rem .75rem;border-radius:.375rem;font-size:.875rem;font-weight:500;cursor:pointer;
+  border:none;background:transparent;color:#64748b;white-space:nowrap;transition:all .12s;}
+.tab:hover{color:#f1f5f9;}
+.tab.on{background:var(--accent);color:white;}
+.tab:disabled{opacity:.4;cursor:not-allowed;}
+/* Buttons */
+.btn-g{background:var(--accent);color:white;border:none;border-radius:.75rem;
+  padding:.65rem 1.5rem;font-weight:600;cursor:pointer;transition:background .12s;font-size:.95rem;}
+.btn-g:hover{background:var(--accent-h);}
+.btn-g:disabled{background:#1e3a5f;color:#64748b;cursor:not-allowed;}
+.btn-s{background:rgba(255,255,255,.08);color:#f1f5f9;border:1px solid rgba(255,255,255,.15);
+  border-radius:.75rem;padding:.65rem 1.5rem;font-weight:600;cursor:pointer;transition:all .12s;font-size:.95rem;}
+.btn-s:hover{background:rgba(255,255,255,.14);}
+.btn-danger{background:rgba(220,38,38,.15);color:#f87171;border:1px solid rgba(220,38,38,.3);
+  border-radius:.5rem;padding:.3rem .65rem;font-weight:600;cursor:pointer;font-size:.78rem;transition:all .12s;}
+.btn-danger:hover{background:rgba(220,38,38,.3);}
+.btn-sm{background:rgba(255,255,255,.08);color:#f1f5f9;border:1px solid rgba(255,255,255,.12);
+  border-radius:.5rem;padding:.28rem .65rem;font-weight:500;cursor:pointer;transition:all .12s;font-size:.78rem;}
+.btn-sm:hover{background:rgba(255,255,255,.15);}
+/* Inputs */
+.text-in{width:100%;background:var(--bg-input);border:1px solid rgba(255,255,255,.15);
+  border-radius:.75rem;padding:.7rem 1rem;color:#f1f5f9;font-size:.95rem;}
+.text-in:focus{outline:none;border-color:var(--accent);}
+.score-in{width:3.2rem;text-align:center;padding:.2rem;background:var(--bg-input);
+  border:1px solid rgba(255,255,255,.2);border-radius:.375rem;color:#f1f5f9;font-size:.95rem;font-weight:700;}
+.score-in:focus{outline:none;border-color:var(--accent);}
+/* Cards */
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:.75rem;padding:1rem;}
+/* Photo upload */
+.photo-drop{width:5rem;height:5rem;border-radius:50%;border:2px dashed rgba(255,255,255,.3);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;
+  overflow:hidden;flex-shrink:0;transition:border-color .15s;background:rgba(255,255,255,.04);}
+.photo-drop:hover{border-color:var(--accent);}
+.photo-drop img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+/* Score chips */
+.score-chip{display:inline-flex;align-items:center;gap:.25rem;font-size:.7rem;padding:.15rem .45rem;
+  border-radius:.3rem;white-space:nowrap;}
+.chip-taken{background:rgba(239,68,68,.12);color:#f87171;border:1px solid rgba(239,68,68,.25);}
+.chip-bot{background:rgba(99,102,241,.12);color:#a5b4fc;border:1px solid rgba(99,102,241,.25);}
+.chip-free{background:rgba(255,255,255,.07);color:#94a3b8;border:1px solid rgba(255,255,255,.1);}
+/* Game pick card */
+.game-pick-card{background:var(--bg-card);border:1px solid var(--border);border-radius:.75rem;padding:.875rem 1rem;}
+.game-pick-card.invalid{border-color:rgba(239,68,68,.55)!important;}
+/* Badges */
+.badge-exact{font-size:.68rem;background:rgba(22,163,74,.2);color:#4ade80;
+  border:1px solid rgba(22,163,74,.35);padding:.1rem .4rem;border-radius:.25rem;}
+.badge-res{font-size:.68rem;background:rgba(234,179,8,.18);color:#facc15;
+  border:1px solid rgba(234,179,8,.3);padding:.1rem .4rem;border-radius:.25rem;}
+.badge-miss{font-size:.68rem;background:rgba(255,255,255,.06);color:#64748b;
+  border:1px solid rgba(255,255,255,.1);padding:.1rem .4rem;border-radius:.25rem;}
+.badge-pend{font-size:.68rem;background:rgba(99,102,241,.1);color:#a5b4fc;
+  border:1px solid rgba(99,102,241,.2);padding:.1rem .4rem;border-radius:.25rem;}
+/* Pick order bar */
+.order-bar{display:flex;gap:.75rem;overflow-x:auto;padding:.5rem 0;scrollbar-width:none;}
+.order-bar::-webkit-scrollbar{display:none;}
+.picker-chip{display:flex;flex-direction:column;align-items:center;gap:.35rem;flex-shrink:0;
+  padding:.5rem .6rem;border-radius:.75rem;border:2px solid transparent;transition:all .15s;}
+.picker-chip.done{border-color:rgba(22,163,74,.4);background:rgba(22,163,74,.07);}
+.picker-chip.current{border-color:#16a34a;background:rgba(22,163,74,.12);}
+.picker-chip.waiting{border-color:rgba(255,255,255,.08);background:rgba(255,255,255,.03);}
+.picker-chip .p-label{font-size:.65rem;font-weight:600;max-width:5rem;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap;text-align:center;}
+/* Avatar helpers */
+.av{border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid rgba(255,255,255,.2);}
+/* Points cell */
+.pts-big{font-size:1.5rem;font-weight:900;color:#4ade80;font-family:'Courier New',monospace;}
+/* Rank badge */
+.rank-badge{width:1.5rem;height:1.5rem;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:.7rem;font-weight:800;flex-shrink:0;}
+/* Horiz divider */
+hr.soft{border:none;border-top:1px solid var(--border);margin:.75rem 0;}
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- NAV -->
+<nav style="position:sticky;top:0;z-index:50;background:var(--bg-nav,rgba(10,22,40,.95));
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);">
+  <div style="max-width:52rem;margin:0 auto;padding:0 1rem;display:flex;align-items:center;
+    height:3.25rem;gap:.25rem;">
+    <span style="font-weight:700;color:#fcd34d;margin-right:.75rem;white-space:nowrap;
+      font-size:.9rem;">⚽ WC2026 Daily</span>
+    <button id="tn-pick"   class="tab" onclick="setView('pick')">Pick</button>
+    <button id="tn-admin"  class="tab" onclick="setView('admin')">Results</button>
+    <button id="tn-board"  class="tab" onclick="setView('board')">Leaderboard</button>
+    <button id="tn-setup"  class="tab" onclick="setView('setup')" style="margin-left:auto;">Setup</button>
+  </div>
+</nav>
+
+<div id="app" style="max-width:52rem;margin:0 auto;padding:1.25rem 1rem;"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// CONSTANTS — Game Data
+// ═══════════════════════════════════════════════════════════════
+
+const FLAGS = {
+  'Mexico':'🇲🇽','South Africa':'🇿🇦','South Korea':'🇰🇷','Czechia':'🇨🇿',
+  'Canada':'🇨🇦','Bosnia and Herz.':'🇧🇦','Qatar':'🇶🇦','Switzerland':'🇨🇭',
+  'Brazil':'🇧🇷','Morocco':'🇲🇦','Haiti':'🇭🇹','Scotland':'🏴󠁧󠁢󠁳󠁣󠁴󠁿',
+  'USA':'🇺🇸','Paraguay':'🇵🇾','Australia':'🇦🇺','Turkey':'🇹🇷',
+  'Germany':'🇩🇪','Curaçao':'🇨🇼','Ivory Coast':'🇨🇮','Ecuador':'🇪🇨',
+  'Netherlands':'🇳🇱','Japan':'🇯🇵','Sweden':'🇸🇪','Tunisia':'🇹🇳',
+  'Belgium':'🇧🇪','Egypt':'🇪🇬','Iran':'🇮🇷','New Zealand':'🇳🇿',
+  'Spain':'🇪🇸','Cape Verde':'🇨🇻','Saudi Arabia':'🇸🇦','Uruguay':'🇺🇾',
+  'France':'🇫🇷','Senegal':'🇸🇳','Iraq':'🇮🇶','Norway':'🇳🇴',
+  'Argentina':'🇦🇷','Algeria':'🇩🇿','Austria':'🇦🇹','Jordan':'🇯🇴',
+  'Portugal':'🇵🇹','DR Congo':'🇨🇩','Uzbekistan':'🇺🇿','Colombia':'🇨🇴',
+  'England':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','Croatia':'🇭🇷','Ghana':'🇬🇭','Panama':'🇵🇦',
+};
+
+const ISO2 = {
+  'Mexico':'mx','South Africa':'za','South Korea':'kr','Czechia':'cz',
+  'Canada':'ca','Bosnia and Herz.':'ba','Qatar':'qa','Switzerland':'ch',
+  'Brazil':'br','Morocco':'ma','Haiti':'ht','Scotland':'gb-sct',
+  'USA':'us','Paraguay':'py','Australia':'au','Turkey':'tr',
+  'Germany':'de','Curaçao':'cw','Ivory Coast':'ci','Ecuador':'ec',
+  'Netherlands':'nl','Japan':'jp','Sweden':'se','Tunisia':'tn',
+  'Belgium':'be','Egypt':'eg','Iran':'ir','New Zealand':'nz',
+  'Spain':'es','Cape Verde':'cv','Saudi Arabia':'sa','Uruguay':'uy',
+  'France':'fr','Senegal':'sn','Iraq':'iq','Norway':'no',
+  'Argentina':'ar','Algeria':'dz','Austria':'at','Jordan':'jo',
+  'Portugal':'pt','DR Congo':'cd','Uzbekistan':'uz','Colombia':'co',
+  'England':'gb-eng','Croatia':'hr','Ghana':'gh','Panama':'pa',
+};
+
+const TEAM_COLORS = {
+  'Mexico':'#006847','South Africa':'#007A4D','South Korea':'#CD2E3A','Czechia':'#D7141A',
+  'Canada':'#FF0000','Bosnia and Herz.':'#002395','Qatar':'#8D153A','Switzerland':'#FF0000',
+  'Brazil':'#009C3B','Morocco':'#C1272D','Haiti':'#00209F','Scotland':'#003F87',
+  'USA':'#B22234','Paraguay':'#D52B1E','Australia':'#00008B','Turkey':'#E30A17',
+  'Germany':'#1a1a1a','Curaçao':'#003DA5','Ivory Coast':'#F77F00','Ecuador':'#FFD100',
+  'Netherlands':'#FF6600','Japan':'#BC002D','Sweden':'#006AA7','Tunisia':'#E70013',
+  'Belgium':'#ED2939','Egypt':'#CE1126','Iran':'#239F40','New Zealand':'#00247D',
+  'Spain':'#AA151B','Cape Verde':'#003893','Saudi Arabia':'#006C35','Uruguay':'#75AADB',
+  'France':'#002395','Senegal':'#00853F','Iraq':'#CE1126','Norway':'#EF2B2D',
+  'Argentina':'#74ACDF','Algeria':'#006233','Austria':'#ED2939','Jordan':'#007A3D',
+  'Portugal':'#006600','DR Congo':'#0047AB','Uzbekistan':'#1EB53A','Colombia':'#FCD116',
+  'England':'#CF091F','Croatia':'#CC0000','Ghana':'#006B3F','Panama':'#DA121A',
+};
+
+// All 72 group stage games
+const GROUP_GAMES = [
+  // MD1
+  {id:1, g:'A',md:1,home:'Mexico',      away:'South Africa',   date:'2026-06-11'},
+  {id:2, g:'A',md:1,home:'South Korea', away:'Czechia',        date:'2026-06-12'},
+  {id:3, g:'B',md:1,home:'Canada',      away:'Bosnia and Herz.',date:'2026-06-12'},
+  {id:4, g:'B',md:1,home:'Qatar',       away:'Switzerland',    date:'2026-06-13'},
+  {id:5, g:'C',md:1,home:'Brazil',      away:'Morocco',        date:'2026-06-13'},
+  {id:6, g:'C',md:1,home:'Haiti',       away:'Scotland',       date:'2026-06-14'},
+  {id:7, g:'D',md:1,home:'USA',         away:'Paraguay',       date:'2026-06-13'},
+  {id:8, g:'D',md:1,home:'Australia',   away:'Turkey',         date:'2026-06-14'},
+  {id:9, g:'E',md:1,home:'Germany',     away:'Curaçao',        date:'2026-06-14'},
+  {id:10,g:'E',md:1,home:'Ivory Coast', away:'Ecuador',        date:'2026-06-15'},
+  {id:11,g:'F',md:1,home:'Netherlands', away:'Japan',          date:'2026-06-14'},
+  {id:12,g:'F',md:1,home:'Sweden',      away:'Tunisia',        date:'2026-06-15'},
+  {id:13,g:'G',md:1,home:'Belgium',     away:'Egypt',          date:'2026-06-15'},
+  {id:14,g:'G',md:1,home:'Iran',        away:'New Zealand',    date:'2026-06-16'},
+  {id:15,g:'H',md:1,home:'Spain',       away:'Cape Verde',     date:'2026-06-15'},
+  {id:16,g:'H',md:1,home:'Saudi Arabia',away:'Uruguay',        date:'2026-06-15'},
+  {id:17,g:'I',md:1,home:'France',      away:'Senegal',        date:'2026-06-16'},
+  {id:18,g:'I',md:1,home:'Iraq',        away:'Norway',         date:'2026-06-16'},
+  {id:19,g:'J',md:1,home:'Argentina',   away:'Algeria',        date:'2026-06-17'},
+  {id:20,g:'J',md:1,home:'Austria',     away:'Jordan',         date:'2026-06-17'},
+  {id:21,g:'K',md:1,home:'Portugal',    away:'DR Congo',       date:'2026-06-17'},
+  {id:22,g:'K',md:1,home:'Uzbekistan',  away:'Colombia',       date:'2026-06-18'},
+  {id:23,g:'L',md:1,home:'England',     away:'Croatia',        date:'2026-06-17'},
+  {id:24,g:'L',md:1,home:'Ghana',       away:'Panama',         date:'2026-06-18'},
+  // MD2
+  {id:25,g:'A',md:2,home:'Mexico',      away:'South Korea',    date:'2026-06-19'},
+  {id:26,g:'A',md:2,home:'Czechia',     away:'South Africa',   date:'2026-06-18'},
+  {id:27,g:'B',md:2,home:'Canada',      away:'Qatar',          date:'2026-06-18'},
+  {id:28,g:'B',md:2,home:'Switzerland', away:'Bosnia and Herz.',date:'2026-06-18'},
+  {id:29,g:'C',md:2,home:'Scotland',    away:'Morocco',        date:'2026-06-19'},
+  {id:30,g:'C',md:2,home:'Brazil',      away:'Haiti',          date:'2026-06-20'},
+  {id:31,g:'D',md:2,home:'USA',         away:'Australia',      date:'2026-06-19'},
+  {id:32,g:'D',md:2,home:'Turkey',      away:'Paraguay',       date:'2026-06-20'},
+  {id:33,g:'E',md:2,home:'Germany',     away:'Ivory Coast',    date:'2026-06-20'},
+  {id:34,g:'E',md:2,home:'Ecuador',     away:'Curaçao',        date:'2026-06-21'},
+  {id:35,g:'F',md:2,home:'Netherlands', away:'Sweden',         date:'2026-06-20'},
+  {id:36,g:'F',md:2,home:'Tunisia',     away:'Japan',          date:'2026-06-21'},
+  {id:37,g:'G',md:2,home:'Belgium',     away:'Iran',           date:'2026-06-21'},
+  {id:38,g:'G',md:2,home:'New Zealand', away:'Egypt',          date:'2026-06-22'},
+  {id:39,g:'H',md:2,home:'Spain',       away:'Saudi Arabia',   date:'2026-06-21'},
+  {id:40,g:'H',md:2,home:'Uruguay',     away:'Cape Verde',     date:'2026-06-21'},
+  {id:41,g:'I',md:2,home:'France',      away:'Iraq',           date:'2026-06-22'},
+  {id:42,g:'I',md:2,home:'Norway',      away:'Senegal',        date:'2026-06-23'},
+  {id:43,g:'J',md:2,home:'Argentina',   away:'Austria',        date:'2026-06-22'},
+  {id:44,g:'J',md:2,home:'Jordan',      away:'Algeria',        date:'2026-06-23'},
+  {id:45,g:'K',md:2,home:'Portugal',    away:'Uzbekistan',     date:'2026-06-23'},
+  {id:46,g:'K',md:2,home:'Colombia',    away:'DR Congo',       date:'2026-06-24'},
+  {id:47,g:'L',md:2,home:'England',     away:'Ghana',          date:'2026-06-23'},
+  {id:48,g:'L',md:2,home:'Panama',      away:'Croatia',        date:'2026-06-24'},
+  // MD3
+  {id:49,g:'A',md:3,home:'South Africa',away:'South Korea',    date:'2026-06-25'},
+  {id:50,g:'A',md:3,home:'Czechia',     away:'Mexico',         date:'2026-06-25'},
+  {id:51,g:'B',md:3,home:'Switzerland', away:'Canada',         date:'2026-06-24'},
+  {id:52,g:'B',md:3,home:'Bosnia and Herz.',away:'Qatar',      date:'2026-06-24'},
+  {id:53,g:'C',md:3,home:'Morocco',     away:'Haiti',          date:'2026-06-24'},
+  {id:54,g:'C',md:3,home:'Scotland',    away:'Brazil',         date:'2026-06-24'},
+  {id:55,g:'D',md:3,home:'Turkey',      away:'USA',            date:'2026-06-26'},
+  {id:56,g:'D',md:3,home:'Paraguay',    away:'Australia',      date:'2026-06-26'},
+  {id:57,g:'E',md:3,home:'Curaçao',     away:'Ivory Coast',    date:'2026-06-25'},
+  {id:58,g:'E',md:3,home:'Ecuador',     away:'Germany',        date:'2026-06-25'},
+  {id:59,g:'F',md:3,home:'Tunisia',     away:'Netherlands',    date:'2026-06-26'},
+  {id:60,g:'F',md:3,home:'Japan',       away:'Sweden',         date:'2026-06-26'},
+  {id:61,g:'G',md:3,home:'New Zealand', away:'Belgium',        date:'2026-06-27'},
+  {id:62,g:'G',md:3,home:'Egypt',       away:'Iran',           date:'2026-06-27'},
+  {id:63,g:'H',md:3,home:'Cape Verde',  away:'Saudi Arabia',   date:'2026-06-27'},
+  {id:64,g:'H',md:3,home:'Uruguay',     away:'Spain',          date:'2026-06-27'},
+  {id:65,g:'I',md:3,home:'Norway',      away:'France',         date:'2026-06-26'},
+  {id:66,g:'I',md:3,home:'Senegal',     away:'Iraq',           date:'2026-06-26'},
+  {id:67,g:'J',md:3,home:'Algeria',     away:'Austria',        date:'2026-06-28'},
+  {id:68,g:'J',md:3,home:'Jordan',      away:'Argentina',      date:'2026-06-28'},
+  {id:69,g:'K',md:3,home:'Colombia',    away:'Portugal',       date:'2026-06-28'},
+  {id:70,g:'K',md:3,home:'DR Congo',    away:'Uzbekistan',     date:'2026-06-28'},
+  {id:71,g:'L',md:3,home:'Panama',      away:'England',        date:'2026-06-27'},
+  {id:72,g:'L',md:3,home:'Croatia',     away:'Ghana',          date:'2026-06-27'},
+];
+
+// Pick sessions: session 1 covers Jun 11+12 together; each subsequent date is its own session
+// Group stage sessions (fixed)
+const GROUP_SESSIONS = buildGroupSessions();
+function buildGroupSessions() {
+  const allDates = [...new Set(GROUP_GAMES.map(g => g.date))].sort();
+  const sessions = [];
+  sessions.push({ key:'s-day1-2', label:'Jun 11–12', dates:['2026-06-11','2026-06-12'] });
+  for (const d of allDates) {
+    if (d === '2026-06-11' || d === '2026-06-12') continue;
+    const [,m,dd] = d.split('-');
+    sessions.push({ key:`s-${d}`, label:`Jun ${parseInt(dd)}`, dates:[d] });
+  }
+  return sessions;
+}
+
+// Dynamic: group sessions + knockout sessions derived from state.knockoutGames
+function getActiveSessions() {
+  const sessions = [...GROUP_SESSIONS];
+  const koDates = [...new Set((state.knockoutGames||[]).map(g=>g.date))].sort();
+  for (const d of koDates) {
+    const [,m,dd] = d.split('-');
+    const monthLabel = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(m)-1];
+    sessions.push({ key:`s-${d}`, label:`${monthLabel} ${parseInt(dd)}`, dates:[d], knockout:true });
+  }
+  return sessions;
+}
+
+// Legacy alias used in a few places
+const PICK_SESSIONS = GROUP_SESSIONS;
+
+// ═══════════════════════════════════════════════════════════════
+// KO BRACKET TEMPLATE — 32 games auto-resolved from group results
+// Each entry has homeSlot/awaySlot codes resolved to team names
+// once results are in; game added to state.knockoutGames then.
+// ═══════════════════════════════════════════════════════════════
+// Slot codes:
+//   '1X' / '2X'   → 1st / 2nd place in group X
+//   'T1'–'T8'     → best 8 third-place finishers (ranked by pts/GD/GF)
+//   'W(id)'       → winner of KO game with that id
+//   'L(id)'       → loser  of KO game with that id  (3rd-place game)
+//
+// Bracket paths (ensures same-group teams can meet no earlier than Final):
+//   Path A (r32-01..04) → r16-1..2 → qf-1 → sf-1
+//   Path B (r32-05..08) → r16-3..4 → qf-2 → sf-1
+//   Path C (r32-09..12) → r16-5..6 → qf-3 → sf-2
+//   Path D (r32-13..16) → r16-7..8 → qf-4 → sf-2
+const KO_BRACKET_TEMPLATE = [
+  // ── Round of 32 — Jul 3–8 ──────────────────────────────────
+  // Path A → QF1 → SF1
+  { id:'r32-01', round:'Round of 32', homeSlot:'1A',       awaySlot:'2B',       date:'2026-07-03' },
+  { id:'r32-02', round:'Round of 32', homeSlot:'1C',       awaySlot:'2D',       date:'2026-07-03' },
+  { id:'r32-03', round:'Round of 32', homeSlot:'1I',       awaySlot:'2J',       date:'2026-07-04' },
+  { id:'r32-04', round:'Round of 32', homeSlot:'T1',       awaySlot:'T2',       date:'2026-07-04' },
+  // Path B → QF2 → SF1
+  { id:'r32-05', round:'Round of 32', homeSlot:'1B',       awaySlot:'2A',       date:'2026-07-04' },
+  { id:'r32-06', round:'Round of 32', homeSlot:'1D',       awaySlot:'2C',       date:'2026-07-05' },
+  { id:'r32-07', round:'Round of 32', homeSlot:'1K',       awaySlot:'2L',       date:'2026-07-05' },
+  { id:'r32-08', round:'Round of 32', homeSlot:'T3',       awaySlot:'T4',       date:'2026-07-05' },
+  // Path C → QF3 → SF2
+  { id:'r32-09', round:'Round of 32', homeSlot:'1E',       awaySlot:'2F',       date:'2026-07-06' },
+  { id:'r32-10', round:'Round of 32', homeSlot:'1G',       awaySlot:'2H',       date:'2026-07-06' },
+  { id:'r32-11', round:'Round of 32', homeSlot:'1J',       awaySlot:'2I',       date:'2026-07-06' },
+  { id:'r32-12', round:'Round of 32', homeSlot:'T5',       awaySlot:'T6',       date:'2026-07-07' },
+  // Path D → QF4 → SF2
+  { id:'r32-13', round:'Round of 32', homeSlot:'1F',       awaySlot:'2E',       date:'2026-07-07' },
+  { id:'r32-14', round:'Round of 32', homeSlot:'1H',       awaySlot:'2G',       date:'2026-07-07' },
+  { id:'r32-15', round:'Round of 32', homeSlot:'1L',       awaySlot:'2K',       date:'2026-07-07' },
+  { id:'r32-16', round:'Round of 32', homeSlot:'T7',       awaySlot:'T8',       date:'2026-07-08' },
+  // ── Round of 16 — Jul 10–13 ────────────────────────────────
+  { id:'r16-1',  round:'Round of 16', homeSlot:'W(r32-01)',awaySlot:'W(r32-02)',date:'2026-07-10' },
+  { id:'r16-2',  round:'Round of 16', homeSlot:'W(r32-03)',awaySlot:'W(r32-04)',date:'2026-07-10' },
+  { id:'r16-3',  round:'Round of 16', homeSlot:'W(r32-05)',awaySlot:'W(r32-06)',date:'2026-07-11' },
+  { id:'r16-4',  round:'Round of 16', homeSlot:'W(r32-07)',awaySlot:'W(r32-08)',date:'2026-07-11' },
+  { id:'r16-5',  round:'Round of 16', homeSlot:'W(r32-09)',awaySlot:'W(r32-10)',date:'2026-07-12' },
+  { id:'r16-6',  round:'Round of 16', homeSlot:'W(r32-11)',awaySlot:'W(r32-12)',date:'2026-07-12' },
+  { id:'r16-7',  round:'Round of 16', homeSlot:'W(r32-13)',awaySlot:'W(r32-14)',date:'2026-07-13' },
+  { id:'r16-8',  round:'Round of 16', homeSlot:'W(r32-15)',awaySlot:'W(r32-16)',date:'2026-07-13' },
+  // ── Quarter-finals — Jul 17–18 ──────────────────────────────
+  { id:'qf-1',   round:'Quarter-final',homeSlot:'W(r16-1)',awaySlot:'W(r16-2)', date:'2026-07-17' },
+  { id:'qf-2',   round:'Quarter-final',homeSlot:'W(r16-3)',awaySlot:'W(r16-4)', date:'2026-07-17' },
+  { id:'qf-3',   round:'Quarter-final',homeSlot:'W(r16-5)',awaySlot:'W(r16-6)', date:'2026-07-18' },
+  { id:'qf-4',   round:'Quarter-final',homeSlot:'W(r16-7)',awaySlot:'W(r16-8)', date:'2026-07-18' },
+  // ── Semi-finals — Jul 21–22 ─────────────────────────────────
+  { id:'sf-1',   round:'Semi-final',  homeSlot:'W(qf-1)',  awaySlot:'W(qf-2)',  date:'2026-07-21' },
+  { id:'sf-2',   round:'Semi-final',  homeSlot:'W(qf-3)',  awaySlot:'W(qf-4)',  date:'2026-07-22' },
+  // ── 3rd Place — Jul 25, Final — Jul 26 ───────────────────────
+  { id:'3rd',    round:'3rd Place',   homeSlot:'L(sf-1)',  awaySlot:'L(sf-2)',  date:'2026-07-25' },
+  { id:'final',  round:'Final',       homeSlot:'W(sf-1)',  awaySlot:'W(sf-2)',  date:'2026-07-26' },
+];
+
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+
+const STORAGE_KEY = 'wc2026-daily-pickem-v1';
+
+function defaultState() {
+  return {
+    gameName: 'WC2026 Daily Pick\'em',
+    players: [],         // [{id, name, photo}]
+    sessions: {},        // {[sessionKey]: {pickOrder:[pids], picks:{[pid]:{[gid]:{h,a,ph?,pa?}}}}}
+    results: {},         // {[gid]: {h, a, ph?, pa?}} — ph/pa present for KO games that went to pens
+    knockoutGames: [],   // [{id, round, home, away, date}]
+    botPens: {},         // {[gid]: {ph, pa}} — bot's penalty picks for KO games (generated once, stored)
+    started: false,
+    view: 'setup',
+  };
+}
+
+// Migrate old saves that lack new fields
+function migrateState(s) {
+  if (!s.knockoutGames) s.knockoutGames = [];
+  if (!s.botPens) s.botPens = {};
+  return s;
+}
+
+let state = loadState();
+let currentPicks = {};  // in-progress picks for current picker: {[gid]: {h,a}}
+let toastTimer = null;
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? migrateState(JSON.parse(raw)) : defaultState();
+  } catch(e) { return defaultState(); }
+}
+
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+  catch(e) { showToast('⚠️ Could not save — localStorage may be full.', 'warn'); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════
+
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+const AVATAR_COLORS = [
+  '#16a34a','#2563eb','#dc2626','#d97706','#7c3aed',
+  '#db2777','#0891b2','#65a30d','#c2410c','#4f46e5','#059669','#b45309',
+];
+function avatarColor(name) {
+  let h = 0;
+  for (const c of name) h = (h * 31 + c.charCodeAt(0)) | 0;
+  return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
+}
+
+function avatarHtml(player, sizePx = 40) {
+  if (!player) {
+    // Bot avatar
+    return `<div style="width:${sizePx}px;height:${sizePx}px;border-radius:50%;background:#312e81;
+      display:flex;align-items:center;justify-content:center;font-size:${sizePx*.45}px;
+      border:2px solid rgba(165,180,252,.3);flex-shrink:0;">🤖</div>`;
+  }
+  if (player.photo) {
+    return `<img src="${player.photo}" alt="${esc(player.name)}"
+      style="width:${sizePx}px;height:${sizePx}px;border-radius:50%;object-fit:cover;
+      border:2px solid rgba(255,255,255,.2);flex-shrink:0;">`;
+  }
+  const col = avatarColor(player.name);
+  const letter = player.name.trim().charAt(0).toUpperCase();
+  const fs = Math.max(10, sizePx * 0.38);
+  return `<div style="width:${sizePx}px;height:${sizePx}px;border-radius:50%;background:${col};
+    display:flex;align-items:center;justify-content:center;font-size:${fs}px;font-weight:700;
+    color:#fff;border:2px solid rgba(255,255,255,.2);flex-shrink:0;">${letter}</div>`;
+}
+
+function flagUrl(team) {
+  const iso = ISO2[team];
+  return iso ? `https://flagcdn.com/w40/${iso}.png` : null;
+}
+
+function teamBg(team) {
+  return TEAM_COLORS[team] || '#475569';
+}
+
+function teamFlagHtml(team, width = 32) {
+  const url = flagUrl(team);
+  if (url) return `<img src="${url}" alt="${esc(team)}"
+    style="width:${width}px;height:${Math.round(width*.65)}px;object-fit:cover;border-radius:2px;
+    box-shadow:0 1px 3px rgba(0,0,0,.5);" onerror="this.style.display='none'">`;
+  const f = FLAGS[team] || '🏳️';
+  return `<span style="font-size:${width*.65}px;line-height:1;">${f}</span>`;
+}
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function formatDate(d) {
+  const [y,m,dd] = d.split('-');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${months[parseInt(m)-1]} ${parseInt(dd)}`;
+}
+
+function uid() { return Math.random().toString(36).slice(2,10); }
+
+// ═══════════════════════════════════════════════════════════════
+// BUSINESS LOGIC
+// ═══════════════════════════════════════════════════════════════
+
+function getSessionGames(sessionKey) {
+  const sess = getActiveSessions().find(s => s.key === sessionKey);
+  if (!sess) return [];
+  const groupGames = GROUP_GAMES.filter(g => sess.dates.includes(g.date));
+  const koGames = (state.knockoutGames||[]).filter(g => sess.dates.includes(g.date));
+  return [...groupGames, ...koGames];
+}
+
+function isKnockoutGame(gameId) {
+  return (state.knockoutGames||[]).some(g => g.id === gameId);
+}
+
+// Generate + persist bot penalty picks for a knockout game (idempotent)
+function getBotPenalties(gameId) {
+  if (!state.botPens) state.botPens = {};
+  if (!state.botPens[gameId]) {
+    let ph, pa;
+    do {
+      ph = Math.floor(Math.random() * 5); // 0–4
+      pa = Math.floor(Math.random() * 5);
+    } while (ph === pa);
+    state.botPens[gameId] = { ph, pa };
+    saveState();
+  }
+  return state.botPens[gameId];
+}
+
+// Scoring for group-stage games
+function calcPoints(predH, predA, actH, actA) {
+  if (predH === actH && predA === actA) return 3;
+  const pOut = predH > predA ? 'H' : predH < predA ? 'A' : 'D';
+  const aOut = actH  > actA  ? 'H' : actH  < actA  ? 'A' : 'D';
+  return pOut === aOut ? 1 : 0;
+}
+
+// Scoring for knockout games.
+// 90-min result is scored exactly like a group game (+3 exact, +1 correct result, +0 miss).
+// A draw is a draw — the penalty shootout settles who advances but does NOT count as a
+// "win" for scoring purposes.
+// Decimal bonus: when the actual result went to pens AND the player predicted a draw
+//   (so they also made penalty picks), add |pick.ph - pick.pa| / 10.
+function calcPointsKO(pick, res) {
+  // Score the 90-min result identically to a group game
+  let pts = calcPoints(pick.h, pick.a, res.h, res.a);
+
+  // Penalty bonus: actual went to pens AND player predicted a draw with penalty picks
+  if (pts > 0 && res.ph != null && pick.h === pick.a && pick.ph != null) {
+    pts += Math.abs(pick.ph - pick.pa) / 10;
+  }
+
+  return pts;
+}
+
+function getOutcome(h, a) { return h > a ? 'H' : h < a ? 'A' : 'D'; }
+
+// Format points: integers stay whole, decimals show 1dp (e.g. 1.2, 3.4)
+function fmtPts(n) {
+  if (n === null || n === undefined) return '—';
+  return n % 1 === 0 ? String(n) : n.toFixed(1);
+}
+
+function scoreGamePick(pick, res, gameId) {
+  if (isKnockoutGame(gameId)) return calcPointsKO(pick, res);
+  return calcPoints(pick.h, pick.a, res.h, res.a);
+}
+
+function getPlayerSessionPoints(playerId, sessionKey) {
+  const sess = state.sessions[sessionKey];
+  if (!sess || !sess.picks[playerId]) return null;
+  const picks = sess.picks[playerId];
+  let pts = 0, hasResult = false;
+  for (const game of getSessionGames(sessionKey)) {
+    const res = state.results[game.id];
+    if (!res) continue;
+    hasResult = true;
+    const pick = picks[game.id];
+    if (pick) pts += scoreGamePick(pick, res, game.id);
+  }
+  return hasResult ? pts : null;
+}
+
+function getPlayerTotalPoints(playerId) {
+  let total = 0;
+  for (const sess of getActiveSessions()) {
+    const pts = getPlayerSessionPoints(playerId, sess.key);
+    if (pts !== null) total += pts;
+  }
+  return total;
+}
+
+function getPlayerStats(playerId) {
+  let total = 0, exact = 0, correct = 0, scored = 0;
+  for (const sess of getActiveSessions()) {
+    const sessData = state.sessions[sess.key];
+    if (!sessData || !sessData.picks[playerId]) continue;
+    const picks = sessData.picks[playerId];
+    for (const game of getSessionGames(sess.key)) {
+      const res = state.results[game.id];
+      if (!res) continue;
+      const pick = picks[game.id];
+      if (!pick) continue;
+      scored++;
+      const pts = scoreGamePick(pick, res, game.id);
+      total += pts;
+      const base = Math.floor(pts); // strip decimal bonus before counting
+      if (base === 3) exact++;
+      else if (base === 1) correct++;
+    }
+  }
+  return { total, exact, correct, scored };
+}
+
+function getBotGamePick(gameId) {
+  if (isKnockoutGame(gameId)) {
+    const pens = getBotPenalties(gameId);
+    return { h:1, a:1, ph: pens.ph, pa: pens.pa };
+  }
+  return { h:1, a:1 };
+}
+
+function getBotSessionPoints(sessionKey) {
+  let pts = 0, hasResult = false;
+  for (const game of getSessionGames(sessionKey)) {
+    const res = state.results[game.id];
+    if (!res) continue;
+    hasResult = true;
+    pts += scoreGamePick(getBotGamePick(game.id), res, game.id);
+  }
+  return hasResult ? pts : null;
+}
+
+function getBotStats() {
+  let total = 0, exact = 0, correct = 0, scored = 0;
+  const allGames = [...GROUP_GAMES, ...(state.knockoutGames||[])];
+  for (const game of allGames) {
+    const res = state.results[game.id];
+    if (!res) continue;
+    scored++;
+    const pts = scoreGamePick(getBotGamePick(game.id), res, game.id);
+    total += pts;
+    const base = Math.floor(pts);
+    if (base === 3) exact++;
+    else if (base === 1) correct++;
+  }
+  return { total, exact, correct, scored };
+}
+
+function isTaken(sessionKey, gameId, h, a, excludePlayerId = null) {
+  const sess = state.sessions[sessionKey];
+  if (!sess) return false;
+  for (const [pid, picks] of Object.entries(sess.picks)) {
+    if (pid === excludePlayerId) continue;
+    const pick = picks[gameId];
+    if (pick && pick.h === h && pick.a === a) return true;
+  }
+  return false;
+}
+
+function getTakenScores(sessionKey, gameId, excludePlayerId = null) {
+  const sess = state.sessions[sessionKey];
+  if (!sess) return [];
+  const taken = [];
+  const order = sess.pickOrder || [];
+  for (const pid of order) {
+    if (pid === excludePlayerId) break; // only previous pickers
+    const pick = sess.picks[pid] && sess.picks[pid][gameId];
+    if (pick) {
+      const p = state.players.find(x => x.id === pid);
+      taken.push({ h: pick.h, a: pick.a, playerName: p ? p.name : '?' });
+    }
+  }
+  return taken;
+}
+
+function getCurrentSession() {
+  const active = getActiveSessions();
+  for (let i = 0; i < active.length; i++) {
+    const sess = active[i];
+    const sessData = state.sessions[sess.key];
+    if (!sessData) return { idx: i, sess };
+    const allPicked = state.players.every(p => sessData.picks[p.id]);
+    if (!allPicked) return { idx: i, sess };
+  }
+  return null;
+}
+
+function getCurrentPicker(sessionKey) {
+  const sessData = state.sessions[sessionKey];
+  if (!sessData) return null;
+  const nextId = sessData.pickOrder.find(id => !sessData.picks[id]);
+  return state.players.find(p => p.id === nextId) || null;
+}
+
+function calculatePickOrder(sessionIndex) {
+  const active = getActiveSessions();
+  const prevSessKey = active[sessionIndex - 1].key;
+  return [...state.players]
+    .sort((a, b) => {
+      const aDay = getPlayerSessionPoints(a.id, prevSessKey) ?? 0;
+      const bDay = getPlayerSessionPoints(b.id, prevSessKey) ?? 0;
+      if (aDay !== bDay) return aDay - bDay;
+      return getPlayerTotalPoints(a.id) - getPlayerTotalPoints(b.id);
+    })
+    .map(p => p.id);
+}
+
+function initSession(sessionIndex) {
+  const active = getActiveSessions();
+  const sess = active[sessionIndex];
+  if (!sess || state.sessions[sess.key]) return;
+  let order;
+  if (sessionIndex === 0) {
+    order = shuffleArray(state.players.map(p => p.id));
+  } else {
+    order = calculatePickOrder(sessionIndex);
+  }
+  state.sessions[sess.key] = { pickOrder: order, picks: {} };
+}
+
+function checkSessionComplete(sessionKey) {
+  const sessData = state.sessions[sessionKey];
+  if (!sessData) return false;
+  return state.players.every(p => sessData.picks[p.id]);
+}
+
+function onSessionComplete(sessionKey) {
+  const active = getActiveSessions();
+  const idx = active.findIndex(s => s.key === sessionKey);
+  if (idx + 1 < active.length) {
+    initSession(idx + 1);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// KO BRACKET — standings + auto-resolution
+// ═══════════════════════════════════════════════════════════════
+
+// Final standings for one group (ranked: pts desc → GD desc → GF desc → alpha)
+function getGroupStandings(grp) {
+  const grpGames = GROUP_GAMES.filter(g => g.g === grp);
+  const teams = {};
+  for (const g of grpGames) {
+    if (!teams[g.home]) teams[g.home] = { name:g.home, pts:0, gf:0, ga:0, gd:0, played:0 };
+    if (!teams[g.away]) teams[g.away] = { name:g.away, pts:0, gf:0, ga:0, gd:0, played:0 };
+  }
+  for (const g of grpGames) {
+    const r = state.results[g.id];
+    if (!r) continue;
+    const ht = teams[g.home], at = teams[g.away];
+    ht.played++; at.played++;
+    ht.gf += r.h; ht.ga += r.a; ht.gd = ht.gf - ht.ga;
+    at.gf += r.a; at.ga += r.h; at.gd = at.gf - at.ga;
+    if      (r.h > r.a) ht.pts += 3;
+    else if (r.h < r.a) at.pts += 3;
+    else               { ht.pts += 1; at.pts += 1; }
+  }
+  return Object.values(teams).sort((a, b) =>
+    b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.name.localeCompare(b.name)
+  );
+}
+
+// Returns the best 8 third-place teams once all 12 groups are complete
+function getBest3rdPlaceTeams() {
+  const thirds = [];
+  for (const grp of 'ABCDEFGHIJKL') {
+    const st = getGroupStandings(grp);
+    if (st.length >= 3) thirds.push({ ...st[2], group: grp });
+  }
+  thirds.sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.name.localeCompare(b.name));
+  return thirds.slice(0, 8);
+}
+
+// Resolve a slot code → team name, or null if not yet determinable
+function resolveKOSlot(slot) {
+  // Group winner/runner-up: '1A', '2L', etc.
+  const gpM = slot.match(/^([12])([A-L])$/);
+  if (gpM) {
+    const pos = parseInt(gpM[1]) - 1;
+    const grp = gpM[2];
+    const grpGames = GROUP_GAMES.filter(g => g.g === grp);
+    if (!grpGames.every(g => state.results[g.id])) return null; // group not finished
+    const st = getGroupStandings(grp);
+    return st[pos] ? st[pos].name : null;
+  }
+  // Best 3rd-place teams: 'T1'–'T8' — need all 12 groups done
+  const tM = slot.match(/^T([1-8])$/);
+  if (tM) {
+    const idx = parseInt(tM[1]) - 1;
+    const allDone = 'ABCDEFGHIJKL'.split('').every(g =>
+      GROUP_GAMES.filter(gg => gg.g === g).every(gg => state.results[gg.id])
+    );
+    if (!allDone) return null;
+    const best8 = getBest3rdPlaceTeams();
+    return best8[idx] ? best8[idx].name : null;
+  }
+  // Winner of a KO game: 'W(r32-01)', 'W(sf-1)', etc.
+  const wM = slot.match(/^W\(([^)]+)\)$/);
+  if (wM) {
+    const gid = wM[1];
+    const ko = (state.knockoutGames || []).find(g => g.id === gid);
+    if (!ko) return null;
+    const res = state.results[ko.id];
+    if (!res) return null;
+    if (res.h > res.a) return ko.home;
+    if (res.a > res.h) return ko.away;
+    // Draw: pen result must be present AND decisive (ph !== pa)
+    if (res.ph != null && res.ph !== res.pa) return res.ph > res.pa ? ko.home : ko.away;
+    return null; // draw with no valid penalty result yet
+  }
+  // Loser of a KO game: 'L(sf-1)', 'L(sf-2)' — used for 3rd place
+  const lM = slot.match(/^L\(([^)]+)\)$/);
+  if (lM) {
+    const gid = lM[1];
+    const ko = (state.knockoutGames || []).find(g => g.id === gid);
+    if (!ko) return null;
+    const res = state.results[ko.id];
+    if (!res) return null;
+    if (res.h > res.a) return ko.away;
+    if (res.a > res.h) return ko.home;
+    // Draw: pen result must be present AND decisive (ph !== pa)
+    if (res.ph != null && res.ph !== res.pa) return res.ph > res.pa ? ko.away : ko.home;
+    return null;
+  }
+  return null;
+}
+
+// Create / update KO games in state.knockoutGames as bracket slots resolve.
+// Called after every result save and after ESPN fetch.
+function syncKOBracket() {
+  if (!state.knockoutGames) state.knockoutGames = [];
+  let changed = false;
+  for (const tmpl of KO_BRACKET_TEMPLATE) {
+    const existing = state.knockoutGames.find(g => g.id === tmpl.id);
+    const home = resolveKOSlot(tmpl.homeSlot);
+    const away = resolveKOSlot(tmpl.awaySlot);
+    if (home && away) {
+      if (!existing) {
+        state.knockoutGames.push({ id: tmpl.id, round: tmpl.round, home, away, date: tmpl.date });
+        // Do NOT call initSession here — pick order must be computed lazily (in renderPick)
+        // once the previous session's actual scores are known. Pre-initializing here would
+        // lock in a stale pick order based on zero/null previous-session scores.
+        changed = true;
+      } else if (existing.home !== home || existing.away !== away) {
+        // Shouldn't normally happen but handles edge cases (re-entry of results)
+        existing.home = home;
+        existing.away = away;
+        changed = true;
+      }
+    }
+  }
+  if (changed) saveState();
+  return changed;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PICK UI STATE
+// ═══════════════════════════════════════════════════════════════
+
+function resetCurrentPicks(sessionKey) {
+  currentPicks = {};
+  for (const game of getSessionGames(sessionKey)) {
+    currentPicks[game.id] = isKnockoutGame(game.id)
+      ? { h:0, a:0, ph:0, pa:0 }
+      : { h:0, a:0 };
+  }
+}
+
+function adjustScore(gameId, side, delta) {
+  if (!currentPicks[gameId]) currentPicks[gameId] = { h:0, a:0 };
+  currentPicks[gameId][side] = Math.max(0, (currentPicks[gameId][side] || 0) + delta);
+  const el = document.getElementById(`sd-${side}-${gameId}`);
+  if (el) el.textContent = currentPicks[gameId][side];
+  clearGameError(gameId);
+  updatePenSection(gameId);
+}
+
+function adjustPen(gameId, side, delta) {
+  if (!currentPicks[gameId]) currentPicks[gameId] = { h:0, a:0, ph:0, pa:0 };
+  currentPicks[gameId][side] = Math.max(0, (currentPicks[gameId][side] || 0) + delta);
+  const el = document.getElementById(`sd-${side}-${gameId}`);
+  if (el) el.textContent = currentPicks[gameId][side];
+  clearGameError(gameId);
+}
+
+function updatePenSection(gameId) {
+  if (!isKnockoutGame(gameId)) return;
+  const penSec = document.getElementById(`pen-section-${gameId}`);
+  if (!penSec) return;
+  const pick = currentPicks[gameId] || {h:0, a:0};
+  penSec.style.display = pick.h === pick.a ? 'block' : 'none';
+}
+
+function setGameError(gameId, msg) {
+  const el = document.getElementById(`gerr-${gameId}`);
+  if (el) { el.textContent = msg; el.style.display = 'block'; }
+  const card = document.getElementById(`gcard-${gameId}`);
+  if (card) card.classList.add('invalid');
+}
+
+function clearGameError(gameId) {
+  const el = document.getElementById(`gerr-${gameId}`);
+  if (el) { el.textContent = ''; el.style.display = 'none'; }
+  const card = document.getElementById(`gcard-${gameId}`);
+  if (card) card.classList.remove('invalid');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ACTIONS
+// ═══════════════════════════════════════════════════════════════
+
+function startGame() {
+  if (state.players.length < 2) return;
+  state.started = true;
+  initSession(0);
+  resetCurrentPicks(getActiveSessions()[0].key);
+  saveState();
+  setView('pick');
+}
+
+function addKnockoutGame(round, home, away, date) {
+  const id = `ko-${uid()}`;
+  state.knockoutGames.push({ id, round, home, away, date });
+  // Init a session for this date if one doesn't exist yet
+  const sessKey = `s-${date}`;
+  if (!state.sessions[sessKey]) {
+    // Find the index of this new session in the active list
+    const active = getActiveSessions();
+    const idx = active.findIndex(s => s.key === sessKey);
+    if (idx >= 0) initSession(idx);
+  }
+  saveState();
+  window.renderAdmin();
+}
+
+function addPlayer(name, photo) {
+  if (!name.trim()) return;
+  state.players.push({ id: uid(), name: name.trim(), photo: photo || '' });
+  saveState();
+  renderSetup();
+}
+
+function removePlayer(id) {
+  if (state.started) return;
+  state.players = state.players.filter(p => p.id !== id);
+  saveState();
+  renderSetup();
+}
+
+function submitPicks(sessionKey, playerId) {
+  const games = getSessionGames(sessionKey);
+  let valid = true;
+
+  for (const game of games) {
+    clearGameError(game.id);
+    const pick = currentPicks[game.id] || { h:0, a:0 };
+    const { h, a } = pick;
+    const ko = isKnockoutGame(game.id);
+
+    // KO rule: if draw, penalty scores must be set and different
+    if (ko && h === a) {
+      const ph = pick.ph ?? 0, pa = pick.pa ?? 0;
+      if (ph === pa) {
+        setGameError(game.id, 'It\'s a draw — penalty scores must differ to settle who goes through!');
+        valid = false;
+      }
+    }
+  }
+
+  if (!valid) {
+    showToast('⚠️ Fix the errors above before submitting.', 'warn');
+    return;
+  }
+
+  // Save picks
+  const sessData = state.sessions[sessionKey];
+  sessData.picks[playerId] = {};
+  for (const game of games) {
+    const cp = currentPicks[game.id] || { h:0, a:0 };
+    const ko = isKnockoutGame(game.id);
+    // For KO draws, store penalty picks; for decisive KO results, strip ph/pa
+    if (ko && cp.h === cp.a) {
+      sessData.picks[playerId][game.id] = { h:cp.h, a:cp.a, ph:cp.ph??0, pa:cp.pa??0 };
+    } else {
+      sessData.picks[playerId][game.id] = { h:cp.h, a:cp.a };
+    }
+  }
+
+  if (checkSessionComplete(sessionKey)) {
+    onSessionComplete(sessionKey);
+  }
+
+  saveState();
+  showToast('✓ Picks saved!', 'ok');
+
+  // Reset and re-render pick screen
+  const cur = getCurrentSession();
+  if (cur) {
+    resetCurrentPicks(cur.sess.key);
+  }
+  renderPick();
+}
+
+function saveResult(gameId, h, a, ph, pa) {
+  if (h === '' || a === '' || isNaN(parseInt(h)) || isNaN(parseInt(a))) {
+    delete state.results[gameId];
+  } else {
+    const r = { h: Math.max(0, parseInt(h)), a: Math.max(0, parseInt(a)) };
+    if (ph !== undefined && pa !== undefined &&
+        ph !== '' && pa !== '' &&
+        !isNaN(parseInt(ph)) && !isNaN(parseInt(pa))) {
+      r.ph = Math.max(0, parseInt(ph));
+      r.pa = Math.max(0, parseInt(pa));
+    }
+    state.results[gameId] = r;
+  }
+  saveState();
+  syncKOBracket(); // unlock any KO games whose slots are now resolved
+}
+
+function resetGame() {
+  if (!confirm('Reset the entire game? This erases all picks and results.')) return;
+  state = defaultState();
+  currentPicks = {};
+  saveState();
+  setView('setup');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════════════
+
+function showToast(msg, type = 'ok') {
+  let el = document.getElementById('toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'toast';
+    el.style.cssText = 'position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);' +
+      'z-index:999;padding:.6rem 1.25rem;border-radius:.75rem;font-size:.875rem;font-weight:600;' +
+      'transition:opacity .3s;pointer-events:none;white-space:nowrap;';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.style.background = type === 'ok' ? '#15803d' : '#b45309';
+  el.style.color = '#fff';
+  el.style.opacity = '1';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.style.opacity = '0'; }, 2500);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════════
+
+function setView(v) {
+  state.view = v;
+  // Don't save view to state (it's ephemeral)
+  updateNav();
+  render();
+}
+
+function updateNav() {
+  const views = ['pick','admin','board','setup'];
+  views.forEach(v => {
+    const btn = document.getElementById(`tn-${v}`);
+    if (btn) {
+      btn.classList.toggle('on', state.view === v);
+      btn.disabled = (!state.started && v !== 'setup');
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PHOTO UPLOAD
+// ═══════════════════════════════════════════════════════════════
+
+function resizeToDataUrl(file, cb) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 180;
+      const scale = Math.min(MAX / img.width, MAX / img.height, 1);
+      const canvas = document.createElement('canvas');
+      canvas.width  = Math.round(img.width  * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      cb(canvas.toDataURL('image/jpeg', 0.72));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER — SETUP
+// ═══════════════════════════════════════════════════════════════
+
+function renderSetup() {
+  const app = document.getElementById('app');
+  let pendingPhoto = ''; // data url before adding player
+
+  app.innerHTML = `
+<div style="max-width:36rem;margin:0 auto;">
+  <div style="text-align:center;margin-bottom:2rem;">
+    <div style="font-size:2.5rem;margin-bottom:.5rem;">⚽</div>
+    <h1 style="font-size:1.75rem;font-weight:800;color:#f1f5f9;margin:0 0 .35rem;">
+      WC2026 Daily Pick'em
+    </h1>
+    <p style="color:#94a3b8;font-size:.9rem;max-width:26rem;margin:0 auto;">
+      Pick game scores day by day. See what others chose before you pick.
+      The 🤖 <span style="color:#a5b4fc;font-weight:600;">1:1 Bot</span>
+      always picks 1–1 as a benchmark — can you beat it?
+    </p>
+  </div>
+
+  ${state.started ? `
+    <div class="card" style="margin-bottom:1.25rem;border-color:rgba(234,179,8,.35);
+      background:rgba(234,179,8,.07);">
+      <div style="display:flex;align-items:center;gap:.75rem;">
+        <span style="font-size:1.25rem;">⚠️</span>
+        <div>
+          <div style="font-weight:600;color:#fcd34d;">Game in progress</div>
+          <div style="font-size:.82rem;color:#94a3b8;">
+            You can't change players while the game is running.
+          </div>
+        </div>
+        <button class="btn-danger" style="margin-left:auto;" onclick="resetGame()">Reset game</button>
+      </div>
+    </div>
+  ` : ''}
+
+  <!-- Game name -->
+  <div class="card" style="margin-bottom:1rem;">
+    <label style="font-size:.8rem;font-weight:600;color:#94a3b8;display:block;margin-bottom:.4rem;">
+      GAME NAME (optional)
+    </label>
+    <input type="text" class="text-in" id="game-name-input"
+      value="${esc(state.gameName)}"
+      placeholder="e.g. Office WC2026 Pool"
+      ${state.started ? 'disabled' : ''}
+      oninput="state.gameName=this.value;saveState();">
+  </div>
+
+  <!-- Add player -->
+  ${!state.started ? `
+  <div class="card" style="margin-bottom:1rem;">
+    <div style="font-size:.8rem;font-weight:600;color:#94a3b8;margin-bottom:.75rem;">ADD PLAYER</div>
+    <div style="display:flex;align-items:center;gap:1rem;">
+      <!-- photo upload -->
+      <div class="photo-drop" id="photo-drop-area" onclick="document.getElementById('photo-file-input').click();"
+        title="Click to upload photo">
+        <div id="photo-preview-inner" style="display:flex;flex-direction:column;align-items:center;
+          gap:.25rem;color:#64748b;font-size:.7rem;text-align:center;padding:.25rem;">
+          <span style="font-size:1.5rem;">📷</span>
+          <span>Photo</span>
+        </div>
+      </div>
+      <input type="file" id="photo-file-input" accept="image/*" style="display:none;"
+        onchange="handlePhotoUpload(this)">
+      <!-- name input -->
+      <div style="flex:1;">
+        <input type="text" class="text-in" id="new-player-name"
+          placeholder="Player name" maxlength="24"
+          onkeydown="if(event.key==='Enter')addPlayerFromForm();">
+      </div>
+      <button class="btn-g" onclick="addPlayerFromForm()">Add</button>
+    </div>
+  </div>
+  ` : ''}
+
+  <!-- Players list -->
+  <div class="card" style="margin-bottom:1.25rem;">
+    <div style="font-size:.8rem;font-weight:600;color:#94a3b8;margin-bottom:.75rem;">
+      PLAYERS (${state.players.length})
+    </div>
+    ${state.players.length === 0 ? `
+      <div style="color:#64748b;font-size:.875rem;text-align:center;padding:1rem 0;">
+        No players added yet. Add at least 2 to start.
+      </div>
+    ` : `
+      <div style="display:flex;flex-direction:column;gap:.5rem;" id="player-list">
+        ${state.players.map((p, i) => `
+          <div style="display:flex;align-items:center;gap:.75rem;padding:.5rem;
+            border-radius:.5rem;background:rgba(255,255,255,.04);">
+            ${avatarHtml(p, 40)}
+            <div style="flex:1;">
+              <div style="font-weight:600;font-size:.95rem;">${esc(p.name)}</div>
+              <div style="font-size:.72rem;color:#64748b;">Player ${i+1}</div>
+            </div>
+            ${!state.started ? `
+              <button class="btn-danger" onclick="removePlayer('${p.id}')">Remove</button>
+            ` : ''}
+          </div>
+        `).join('')}
+      </div>
+    `}
+
+    <!-- 1:1 bot always present -->
+    <div style="margin-top:.75rem;padding:.5rem;border-radius:.5rem;
+      background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);">
+      <div style="display:flex;align-items:center;gap:.75rem;">
+        ${avatarHtml(null, 40)}
+        <div style="flex:1;">
+          <div style="font-weight:600;font-size:.9rem;color:#a5b4fc;">🤖 1:1 Bot</div>
+          <div style="font-size:.72rem;color:#64748b;">Always picks 1–1. Benchmark — not ranked.</div>
+        </div>
+        <span style="font-size:.72rem;color:#6366f1;background:rgba(99,102,241,.15);
+          padding:.2rem .5rem;border-radius:.25rem;font-weight:600;">AUTO</span>
+      </div>
+    </div>
+  </div>
+
+  ${!state.started ? `
+  <button class="btn-g" style="width:100%;font-size:1.05rem;padding:.85rem;"
+    ${state.players.length < 2 ? 'disabled' : ''}
+    onclick="startGame()">
+    Start Game ${state.players.length < 2 ? '(need ≥ 2 players)' : '→'}
+  </button>
+  ` : `
+  <button class="btn-g" style="width:100%;font-size:1.05rem;padding:.85rem;"
+    onclick="setView('pick')">
+    Go to Today's Picks →
+  </button>
+  `}
+
+  <div style="margin-top:1.5rem;padding:1rem;border-radius:.75rem;
+    background:rgba(255,255,255,.03);border:1px solid var(--border);">
+    <div style="font-size:.78rem;font-weight:700;color:#64748b;margin-bottom:.5rem;">HOW IT WORKS</div>
+    <ul style="font-size:.8rem;color:#94a3b8;list-style:disc;padding-left:1.25rem;
+      display:flex;flex-direction:column;gap:.3rem;">
+      <li>Each day, players take turns picking scores for that day's games</li>
+      <li>See what earlier players picked before making your own choice</li>
+      <li><strong style="color:#f1f5f9;">+3 pts</strong> for exact score, <strong style="color:#f1f5f9;">+1 pt</strong> for correct result</li>
+      <li>Day 1 pick order is random. After that: worse yesterday = picks first</li>
+      <li>🤖 1:1 Bot always picks 1–1 — see how that benchmark performs</li>
+    </ul>
+  </div>
+</div>
+`;
+
+  // Restore photo upload handler
+  window._pendingPhoto = '';
+}
+
+window.addPlayerFromForm = function() {
+  const nameEl = document.getElementById('new-player-name');
+  if (!nameEl || !nameEl.value.trim()) return;
+  addPlayer(nameEl.value, window._pendingPhoto || '');
+  nameEl.value = '';
+  window._pendingPhoto = '';
+  // Reset photo preview
+  const inner = document.getElementById('photo-preview-inner');
+  if (inner) inner.innerHTML = `<span style="font-size:1.5rem;">📷</span><span>Photo</span>`;
+  const area = document.getElementById('photo-drop-area');
+  if (area) { const img = area.querySelector('img'); if (img) img.remove(); }
+};
+
+window.handlePhotoUpload = function(input) {
+  const file = input.files[0];
+  if (!file) return;
+  resizeToDataUrl(file, dataUrl => {
+    window._pendingPhoto = dataUrl;
+    const area = document.getElementById('photo-drop-area');
+    if (area) {
+      area.innerHTML = `<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+    }
+  });
+};
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER — PICK
+// ═══════════════════════════════════════════════════════════════
+
+function renderPick() {
+  const app = document.getElementById('app');
+  const cur = getCurrentSession();
+
+  if (!cur) {
+    const allSessions = getActiveSessions();
+    const hasKO = (state.knockoutGames||[]).length > 0;
+    app.innerHTML = `
+<div style="text-align:center;padding:3rem 1rem;">
+  <div style="font-size:3rem;margin-bottom:1rem;">🏆</div>
+  <h2 style="font-size:1.5rem;font-weight:800;color:#fcd34d;margin:0 0 .5rem;">
+    All picks complete!
+  </h2>
+  <p style="color:#94a3b8;max-width:26rem;margin:0 auto .5rem;">
+    All ${allSessions.length} pick session${allSessions.length !== 1 ? 's' : ''} done.
+    ${hasKO ? 'Check the leaderboard for standings.' : 'Knockout bracket generates automatically as group results come in.'}
+  </p>
+  <button class="btn-g" style="margin-top:1.5rem;" onclick="setView('board')">
+    View Leaderboard →
+  </button>
+</div>`;
+    return;
+  }
+
+  const { idx, sess } = cur;
+  let sessData = state.sessions[sess.key];
+
+  // Lazily initialise a KO session the first time it's rendered.
+  // We do this here (not in syncKOBracket) so calculatePickOrder can use
+  // the previous session's actual submitted scores instead of empty picks.
+  if (!sessData) {
+    initSession(idx);
+    sessData = state.sessions[sess.key];
+  }
+
+  const games = getSessionGames(sess.key);
+  const currentPicker = getCurrentPicker(sess.key);
+  const pickOrder = sessData ? sessData.pickOrder : [];
+  const picks = sessData ? sessData.picks : {};
+
+  if (!currentPicker) {
+    // Session data exists but no picker found — shouldn't happen
+    app.innerHTML = `<div style="text-align:center;padding:2rem;color:#94a3b8;">
+      Something went wrong. <button class="btn-s" onclick="setView('setup')">Go to Setup</button>
+    </div>`;
+    return;
+  }
+
+  // Reset currentPicks if we're starting fresh for this picker
+  // (Don't reset if mid-entry — only reset when picker changes)
+  const pickingKey = `${sess.key}::${currentPicker.id}`;
+  if (window._lastPickingKey !== pickingKey) {
+    window._lastPickingKey = pickingKey;
+    resetCurrentPicks(sess.key);
+  }
+
+  const pickedCount = pickOrder.filter(id => picks[id]).length;
+  const totalPickers = pickOrder.length;
+
+  app.innerHTML = `
+<!-- Session header -->
+<div style="margin-bottom:1.25rem;">
+  <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.25rem;flex-wrap:wrap;">
+    <div style="font-size:.75rem;font-weight:700;color:#64748b;letter-spacing:.05em;">
+      SESSION ${idx + 1} OF ${getActiveSessions().length}
+    </div>
+    <div style="font-size:.85rem;font-weight:600;color:#f1f5f9;background:rgba(255,255,255,.08);
+      padding:.2rem .65rem;border-radius:999px;">${sess.label}</div>
+    <div style="font-size:.8rem;color:#64748b;">${games.length} game${games.length!==1?'s':''}</div>
+    <div style="margin-left:auto;font-size:.8rem;color:#94a3b8;">
+      ${pickedCount}/${totalPickers} picked
+    </div>
+  </div>
+
+  <!-- Pick order bar -->
+  <div class="order-bar">
+    ${pickOrder.map((pid, i) => {
+      const p = state.players.find(x => x.id === pid);
+      if (!p) return '';
+      const hasPicked = !!picks[pid];
+      const isCur = pid === currentPicker.id;
+      const cls = hasPicked ? 'done' : isCur ? 'current' : 'waiting';
+      return `
+        <div class="picker-chip ${cls}">
+          <div style="position:relative;">
+            ${avatarHtml(p, 38)}
+            ${hasPicked ? `<div style="position:absolute;bottom:-2px;right:-2px;width:14px;height:14px;
+              border-radius:50%;background:#16a34a;display:flex;align-items:center;justify-content:center;
+              font-size:8px;font-weight:700;">✓</div>` : ''}
+            ${isCur ? `<div style="position:absolute;bottom:-2px;right:-2px;width:14px;height:14px;
+              border-radius:50%;background:#fcd34d;display:flex;align-items:center;justify-content:center;
+              font-size:7px;font-weight:900;color:#000;">→</div>` : ''}
+          </div>
+          <div class="p-label" style="color:${isCur ? '#fcd34d' : hasPicked ? '#4ade80' : '#94a3b8'};">
+            ${esc(p.name)}
+          </div>
+        </div>`;
+    }).join('')}
+  </div>
+</div>
+
+<!-- Current picker -->
+<div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.25rem;padding:1rem;
+  border-radius:.75rem;background:rgba(252,211,77,.07);border:1px solid rgba(252,211,77,.25);">
+  ${avatarHtml(currentPicker, 56)}
+  <div style="flex:1;">
+    <div style="font-size:.7rem;font-weight:700;color:#fcd34d;letter-spacing:.06em;
+      margin-bottom:.15rem;">NOW PICKING</div>
+    <div style="font-size:1.3rem;font-weight:800;color:#fff;">${esc(currentPicker.name)}</div>
+    <div style="font-size:.78rem;color:#94a3b8;margin-top:.15rem;">
+      Pick ${pickedCount + 1} of ${totalPickers} — choose a unique score for each game below
+    </div>
+  </div>
+</div>
+
+<!-- Game cards -->
+<div style="display:flex;flex-direction:column;gap:.75rem;" id="pick-games">
+  ${games.map(game => renderPickGameCard(game, sess.key, currentPicker.id)).join('')}
+</div>
+
+<!-- Submit -->
+<div style="margin-top:1.5rem;display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;">
+  <button class="btn-g" style="flex:1;min-width:10rem;font-size:1rem;padding:.8rem;"
+    onclick="submitPicks('${sess.key}','${currentPicker.id}')">
+    Submit ${esc(currentPicker.name)}'s Picks →
+  </button>
+  <div style="font-size:.75rem;color:#64748b;max-width:14rem;">
+    Picks are final once submitted
+  </div>
+</div>
+
+`;
+}
+
+function renderPickGameCard(game, sessionKey, pickerId) {
+  const pick = currentPicks[game.id] || { h:0, a:0 };
+  const ko = isKnockoutGame(game.id);
+  const penVisible = ko && pick.h === pick.a;
+  const botPens = ko ? getBotPenalties(game.id) : null;
+
+  const penSection = ko ? `
+  <div id="pen-section-${game.id}" style="display:${penVisible ? 'block' : 'none'};
+    margin-top:.75rem;padding:.6rem .75rem;border-radius:.5rem;
+    background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.25);">
+    <div style="font-size:.7rem;font-weight:700;color:#a5b4fc;margin-bottom:.5rem;
+      text-align:center;letter-spacing:.04em;">
+      PENALTY SHOOTOUT — pick who goes through (scores must differ)
+    </div>
+    <div style="display:flex;align-items:center;gap:.5rem;justify-content:center;">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:.2rem;">
+        <div style="font-size:.65rem;color:#94a3b8;max-width:5rem;overflow:hidden;
+          text-overflow:ellipsis;white-space:nowrap;">${esc(game.home)}</div>
+        <div class="goal-frame"><div class="score-disp" id="sd-ph-${game.id}">${pick.ph ?? 0}</div></div>
+        <div class="goal-btns">
+          <button class="goal-btn" onclick="adjustPen('${game.id}','ph',-1)">−</button>
+          <button class="goal-btn" onclick="adjustPen('${game.id}','ph',1)">+</button>
+        </div>
+      </div>
+      <div style="font-size:.7rem;color:#475569;font-weight:700;padding:0 .25rem;">PENS</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:.2rem;">
+        <div style="font-size:.65rem;color:#94a3b8;max-width:5rem;overflow:hidden;
+          text-overflow:ellipsis;white-space:nowrap;">${esc(game.away)}</div>
+        <div class="goal-frame"><div class="score-disp" id="sd-pa-${game.id}">${pick.pa ?? 0}</div></div>
+        <div class="goal-btns">
+          <button class="goal-btn" onclick="adjustPen('${game.id}','pa',-1)">−</button>
+          <button class="goal-btn" onclick="adjustPen('${game.id}','pa',1)">+</button>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:.45rem;text-align:center;font-size:.68rem;color:#64748b;">
+      🤖 Bot pens: <span class="score-chip chip-bot" style="margin-left:.2rem;">${botPens.ph}–${botPens.pa}</span>
+    </div>
+  </div>` : '';
+
+  const gameBadge = ko
+    ? `${esc(game.round || 'KO')} · ${formatDate(game.date)}`
+    : `Group ${game.g} · MD${game.md} · ${formatDate(game.date)}`;
+
+  return `
+<div class="game-pick-card" id="gcard-${game.id}">
+  <!-- teams and score inputs -->
+  <div style="display:flex;align-items:center;gap:.5rem;">
+    <!-- home team -->
+    <div style="display:flex;flex-direction:column;align-items:center;gap:.3rem;
+      min-width:0;flex:1;text-align:center;">
+      ${teamFlagHtml(game.home, 36)}
+      <div style="font-size:.78rem;font-weight:600;color:#e2e8f0;overflow:hidden;
+        text-overflow:ellipsis;white-space:nowrap;max-width:100%;">${esc(game.home)}</div>
+    </div>
+    <!-- home score -->
+    <div class="goal-cell">
+      <div class="goal-frame">
+        <div class="score-disp" id="sd-h-${game.id}">${pick.h}</div>
+      </div>
+      <div class="goal-btns">
+        <button class="goal-btn" onclick="adjustScore('${game.id}','h',-1)">−</button>
+        <button class="goal-btn" onclick="adjustScore('${game.id}','h',1)">+</button>
+      </div>
+    </div>
+    <!-- vs -->
+    <div style="font-size:.7rem;font-weight:700;color:#64748b;padding:0 .2rem;">VS</div>
+    <!-- away score -->
+    <div class="goal-cell">
+      <div class="goal-frame">
+        <div class="score-disp" id="sd-a-${game.id}">${pick.a}</div>
+      </div>
+      <div class="goal-btns">
+        <button class="goal-btn" onclick="adjustScore('${game.id}','a',-1)">−</button>
+        <button class="goal-btn" onclick="adjustScore('${game.id}','a',1)">+</button>
+      </div>
+    </div>
+    <!-- away team -->
+    <div style="display:flex;flex-direction:column;align-items:center;gap:.3rem;
+      min-width:0;flex:1;text-align:center;">
+      ${teamFlagHtml(game.away, 36)}
+      <div style="font-size:.78rem;font-weight:600;color:#e2e8f0;overflow:hidden;
+        text-overflow:ellipsis;white-space:nowrap;max-width:100%;">${esc(game.away)}</div>
+    </div>
+  </div>
+
+  ${penSection}
+
+
+  <!-- error msg -->
+  <div id="gerr-${game.id}" style="display:none;margin-top:.5rem;font-size:.78rem;
+    color:#f87171;padding:.35rem .6rem;background:rgba(239,68,68,.1);
+    border-radius:.375rem;border-left:3px solid #ef4444;"></div>
+
+  <!-- game badge -->
+  <div style="margin-top:.4rem;font-size:.65rem;color:#475569;">${gameBadge}</div>
+</div>`;
+}
+
+function renderPriorPicks(sessionKey, games, pickOrder, picks) {
+  const priorPickers = pickOrder.filter(id => picks[id]);
+  if (priorPickers.length === 0) return '';
+
+  return `
+<div style="margin-top:2rem;">
+  <div style="font-size:.78rem;font-weight:700;color:#64748b;margin-bottom:.75rem;">
+    PICKS SO FAR THIS SESSION
+  </div>
+  <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:.78rem;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="text-align:left;padding:.4rem .5rem;color:#64748b;font-weight:600;">Game</th>
+          ${priorPickers.map(pid => {
+            const p = state.players.find(x => x.id === pid);
+            return `<th style="padding:.4rem .5rem;min-width:4.5rem;">${avatarHtml(p, 22)}</th>`;
+          }).join('')}
+        </tr>
+      </thead>
+      <tbody>
+        ${games.map(game => `
+          <tr style="border-bottom:1px solid rgba(255,255,255,.04);">
+            <td style="padding:.4rem .5rem;color:#94a3b8;">
+              ${FLAGS[game.home]||''}${FLAGS[game.away]||''}
+              ${isKnockoutGame(game.id) ? esc(game.round||'KO') : `G${game.g}·MD${game.md}`}
+            </td>
+            ${priorPickers.map(pid => {
+              const pick = picks[pid] && picks[pid][game.id];
+              const ko = isKnockoutGame(game.id);
+              let label = '—';
+              if (pick) {
+                label = `${pick.h}–${pick.a}`;
+                if (ko && pick.h === pick.a && pick.ph != null) label += ` (${pick.ph}–${pick.pa}p)`;
+              }
+              return `<td style="padding:.4rem .5rem;text-align:center;font-weight:700;
+                color:#e2e8f0;font-family:'Courier New',monospace;white-space:nowrap;">
+                ${label}
+              </td>`;
+            }).join('')}
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  </div>
+</div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER — ADMIN (Results)
+// ═══════════════════════════════════════════════════════════════
+
+function renderAdmin() {
+  const app = document.getElementById('app');
+
+  app.innerHTML = `
+<div style="margin-bottom:1.25rem;">
+  <h2 style="font-size:1.2rem;font-weight:800;color:#f1f5f9;margin:0 0 .25rem;">Enter Results</h2>
+  <p style="font-size:.82rem;color:#94a3b8;margin:0;">
+    Enter actual scores for completed games. Results update the leaderboard automatically.
+  </p>
+</div>
+
+${PICK_SESSIONS.map(sess => {
+  const games = getSessionGames(sess.key);
+  const sessData = state.sessions[sess.key];
+  const hasAnyResult = games.some(g => state.results[g.id]);
+  const allResults = games.every(g => state.results[g.id]);
+  const hasAnyPicks = sessData && Object.keys(sessData.picks).length > 0;
+
+  return `
+<details ${hasAnyPicks && !allResults ? 'open' : ''} style="margin-bottom:.75rem;">
+  <summary style="cursor:pointer;padding:.75rem 1rem;border-radius:.75rem;
+    background:var(--bg-card);border:1px solid var(--border);
+    display:flex;align-items:center;gap:.75rem;list-style:none;user-select:none;">
+    <span style="font-weight:700;color:#f1f5f9;font-size:.9rem;">${sess.label}</span>
+    <span style="font-size:.75rem;color:#64748b;">${games.length} games</span>
+    ${allResults ? `<span style="margin-left:auto;font-size:.72rem;background:rgba(22,163,74,.15);
+      color:#4ade80;padding:.15rem .45rem;border-radius:.25rem;border:1px solid rgba(22,163,74,.3);">
+      All results in ✓</span>` :
+    hasAnyResult ? `<span style="margin-left:auto;font-size:.72rem;background:rgba(234,179,8,.12);
+      color:#facc15;padding:.15rem .45rem;border-radius:.25rem;border:1px solid rgba(234,179,8,.25);">
+      Partial</span>` :
+    `<span style="margin-left:auto;font-size:.72rem;color:#64748b;">No results yet</span>`}
+  </summary>
+  <div style="padding:.75rem;border:1px solid var(--border);border-top:none;
+    border-radius:0 0 .75rem .75rem;background:rgba(255,255,255,.02);">
+    ${games.map(game => {
+      const res = state.results[game.id];
+      return `
+<div style="display:flex;align-items:center;gap:.75rem;padding:.6rem .5rem;
+  border-bottom:1px solid rgba(255,255,255,.04);">
+  <!-- teams -->
+  <div style="display:flex;align-items:center;gap:.4rem;flex:1;min-width:0;">
+    <div style="display:flex;align-items:center;gap:.3rem;flex:1;min-width:0;">
+      ${teamFlagHtml(game.home, 22)}
+      <span style="font-size:.8rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;
+        white-space:nowrap;">${esc(game.home)}</span>
+    </div>
+    <span style="font-size:.7rem;color:#64748b;flex-shrink:0;">vs</span>
+    <div style="display:flex;align-items:center;gap:.3rem;flex:1;min-width:0;justify-content:flex-end;">
+      <span style="font-size:.8rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;
+        white-space:nowrap;">${esc(game.away)}</span>
+      ${teamFlagHtml(game.away, 22)}
+    </div>
+  </div>
+  <!-- result inputs -->
+  <div style="display:flex;align-items:center;gap:.4rem;flex-shrink:0;">
+    <input type="number" class="score-in" min="0" max="30"
+      value="${res ? res.h : ''}" placeholder="–"
+      onchange="saveResult(${game.id}, this.value, document.getElementById('res-a-${game.id}').value)"
+      oninput="this.value=this.value.replace(/[^0-9]/,'')"
+      style="width:2.8rem;">
+    <span style="color:#64748b;font-weight:700;">–</span>
+    <input type="number" id="res-a-${game.id}" class="score-in" min="0" max="30"
+      value="${res ? res.a : ''}" placeholder="–"
+      onchange="saveResult(${game.id}, document.querySelector('[onchange*=\\'res-a-${game.id}\\']').value, this.value)"
+      oninput="this.value=this.value.replace(/[^0-9]/,'')"
+      style="width:2.8rem;">
+    ${res ? `<span style="font-size:.8rem;color:#4ade80;margin-left:.2rem;">✓</span>` : ''}
+  </div>
+  <div style="font-size:.65rem;color:#475569;min-width:3.5rem;text-align:right;">
+    G${game.g}·MD${game.md}
+  </div>
+</div>`;
+    }).join('')}
+  </div>
+</details>`;
+}).join('')}
+
+<div style="margin-top:1rem;padding:.875rem;border-radius:.75rem;
+  background:rgba(255,255,255,.03);border:1px solid var(--border);">
+  <div style="font-size:.75rem;color:#64748b;">
+    Results are saved automatically as you type. The leaderboard updates immediately.
+  </div>
+</div>
+
+<div style="margin-top:1.5rem;text-align:center;">
+  <button class="btn-danger" onclick="resetGame()">⚠️ Reset Entire Game</button>
+</div>
+`;
+
+  // Fix the admin result save — the inline event handlers are tricky with the double-field save.
+  // Patch: use unique IDs for both inputs per game
+  // The save is wired up correctly above. Let me re-wire to avoid the selector hack.
+  rebindAdminInputs();
+}
+
+function rebindAdminInputs() {
+  for (const game of GROUP_GAMES) {
+    const hEl = document.getElementById(`res-h-${game.id}`);
+    const aEl = document.getElementById(`res-a-${game.id}`);
+    if (hEl && aEl) {
+      const save = () => saveResult(game.id, hEl.value, aEl.value);
+      hEl.addEventListener('change', save);
+      aEl.addEventListener('change', save);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER — LEADERBOARD
+// ═══════════════════════════════════════════════════════════════
+
+function renderLeaderboard() {
+  const app = document.getElementById('app');
+
+  // Overall standings: players + bot sorted by total points
+  const botStats = getBotStats();
+  const allEntries = [
+    ...state.players.map(p => ({
+      player: p,
+      isBot: false,
+      ...getPlayerStats(p.id),
+    })),
+    { player: null, isBot: true, ...botStats },
+  ];
+
+  // Sort all entries together (humans + bot) ascending — fewest pts = best
+  const displayEntries = [...allEntries]
+    .sort((a, b) => a.total - b.total || a.exact - b.exact || a.correct - b.correct);
+
+  // Assign rank numbers to humans only (bot gets null); human ties share a rank
+  let rank = 0, lastPts = null, lastExact = null, humanPos = 0;
+  for (const e of displayEntries) {
+    if (e.isBot) { e.rank = null; continue; }
+    humanPos++;
+    if (e.total !== lastPts || e.exact !== lastExact) { rank = humanPos; }
+    e.rank = rank;
+    lastPts = e.total; lastExact = e.exact;
+  }
+
+  const rankColors = { 1:'#fcd34d', 2:'#94a3b8', 3:'#c2956b' };
+
+  app.innerHTML = `
+<div style="margin-bottom:1.25rem;">
+  <h2 style="font-size:1.2rem;font-weight:800;color:#f1f5f9;margin:0 0 .25rem;">Leaderboard</h2>
+  <p style="font-size:.82rem;color:#94a3b8;margin:0;">
+    Fewest points wins. 🤖 1:1 Bot shown for reference only.
+  </p>
+</div>
+
+<!-- Overall table -->
+<div class="card" style="margin-bottom:1.5rem;overflow-x:auto;">
+  <table style="width:100%;border-collapse:collapse;">
+    <thead>
+      <tr style="border-bottom:1px solid var(--border);">
+        <th style="text-align:left;padding:.5rem .6rem;font-size:.72rem;color:#64748b;
+          font-weight:700;letter-spacing:.04em;white-space:nowrap;">#</th>
+        <th style="text-align:left;padding:.5rem .6rem;font-size:.72rem;color:#64748b;
+          font-weight:700;letter-spacing:.04em;">PLAYER</th>
+        <th style="text-align:center;padding:.5rem .6rem;font-size:.72rem;color:#64748b;
+          font-weight:700;">POINTS</th>
+        <th style="text-align:center;padding:.5rem .6rem;font-size:.72rem;color:#64748b;
+          font-weight:700;">CORRECT</th>
+        <th style="text-align:center;padding:.5rem .6rem;font-size:.72rem;color:#64748b;
+          font-weight:700;">EXACT</th>
+        <th style="text-align:center;padding:.5rem .6rem;font-size:.72rem;color:#64748b;
+          font-weight:700;">SCORE</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${displayEntries.map(e => {
+        const isBot = e.isBot;
+        const rc = isBot ? '#6366f1' : (rankColors[e.rank] || 'var(--text-faint)');
+        const rankCell = isBot
+          ? `<span style="color:#6366f1;font-size:.8rem;">—</span>`
+          : `<span style="color:${rc};font-weight:800;">${e.rank}</span>`;
+        return `
+<tr style="border-bottom:1px solid rgba(255,255,255,.04);
+  ${isBot ? 'background:rgba(99,102,241,.06);border-top:1px solid rgba(99,102,241,.2);' : ''}">
+  <td style="padding:.6rem .6rem;text-align:center;white-space:nowrap;font-size:.85rem;">
+    ${rankCell}
+  </td>
+  <td style="padding:.6rem .6rem;">
+    <div style="display:flex;align-items:center;gap:.6rem;">
+      ${isBot ? avatarHtml(null, 32) : avatarHtml(e.player, 32)}
+      <div>
+        <div style="font-weight:600;font-size:.9rem;color:${isBot ? '#a5b4fc' : '#f1f5f9'};">
+          ${isBot ? '🤖 1:1 Bot' : esc(e.player.name)}
+        </div>
+        ${isBot ? `<div style="font-size:.68rem;color:#6366f1;">benchmark — not ranked</div>` : ''}
+      </div>
+    </div>
+  </td>
+  <td style="padding:.6rem;text-align:center;font-size:1.15rem;font-weight:900;
+    color:#4ade80;font-family:'Courier New',monospace;">${fmtPts(e.total)}</td>
+  <td style="padding:.6rem;text-align:center;">
+    <span class="badge-res">${e.correct}</span>
+  </td>
+  <td style="padding:.6rem;text-align:center;">
+    <span class="badge-exact">${e.exact}</span>
+  </td>
+  <td style="padding:.6rem;text-align:center;font-size:.82rem;color:#64748b;">${e.scored}</td>
+</tr>`;
+      }).join('')}
+    </tbody>
+  </table>
+</div>
+
+<!-- Per session breakdown -->
+<div style="font-size:.78rem;font-weight:700;color:#64748b;margin-bottom:.75rem;">
+  DAY-BY-DAY BREAKDOWN
+</div>
+
+${getActiveSessions().map((sess, si) => {
+  const sessData = state.sessions[sess.key];
+  const games = getSessionGames(sess.key);
+  if (!sessData || Object.keys(sessData.picks).length === 0) return ''; // skip unseen sessions
+
+  const anyResult = games.some(g => state.results[g.id]);
+  const koSess = !!sess.knockout;
+
+  // Helper: format a pick score with optional pens for display
+  function fmtPick(pick, ko) {
+    if (!pick) return '—';
+    let s = `${pick.h}–${pick.a}`;
+    if (ko && pick.h === pick.a && pick.ph != null) s += ` (${pick.ph}–${pick.pa}p)`;
+    return s;
+  }
+  function fmtResult(res, ko) {
+    if (!res) return '?–?';
+    let s = `${res.h}–${res.a}`;
+    if (ko && res.h === res.a && res.ph != null) s += ` (${res.ph}–${res.pa}p)`;
+    return s;
+  }
+  function fmtBot(game) {
+    const bp = getBotGamePick(game.id);
+    let s = `${bp.h}–${bp.a}`;
+    if (isKnockoutGame(game.id) && bp.ph != null) s += ` (${bp.ph}–${bp.pa}p)`;
+    return s;
+  }
+
+  return `
+<details style="margin-bottom:.6rem;">
+  <summary style="cursor:pointer;list-style:none;padding:.6rem .875rem;
+    border-radius:.75rem;background:var(--bg-card);border:1px solid var(--border);
+    display:flex;align-items:center;gap:.75rem;user-select:none;">
+    <span style="font-weight:700;color:#f1f5f9;font-size:.85rem;">
+      ${koSess ? '⚽ KO' : `Session ${si+1}`}: ${sess.label}
+    </span>
+    <span style="font-size:.72rem;color:#64748b;">${games.length} game${games.length!==1?'s':''}</span>
+    ${anyResult
+      ? `<span style="margin-left:auto;font-size:.72rem;color:#64748b;">Results in</span>`
+      : `<span style="margin-left:auto;font-size:.72rem;color:#6366f1;">Awaiting results</span>`}
+  </summary>
+  <div style="border:1px solid var(--border);border-top:none;border-radius:0 0 .75rem .75rem;
+    background:rgba(255,255,255,.02);overflow-x:auto;">
+    <!-- Pick order for this session -->
+    <div style="padding:.6rem .875rem;border-bottom:1px solid var(--border);
+      font-size:.72rem;color:#64748b;display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;">
+      <span style="font-weight:600;color:#94a3b8;">Pick order:</span>
+      ${sessData.pickOrder.map((pid, i) => {
+        const p = state.players.find(x => x.id === pid);
+        return `<span style="color:#e2e8f0;">${i+1}. ${p ? esc(p.name) : '?'}</span>`;
+      }).join('<span style="color:#475569;">→</span>')}
+    </div>
+    <!-- Game results grid -->
+    <table style="width:100%;border-collapse:collapse;font-size:.78rem;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="text-align:left;padding:.4rem .6rem;color:#64748b;font-weight:600;
+            white-space:nowrap;">Game</th>
+          <th style="text-align:center;padding:.4rem .6rem;color:#64748b;font-weight:600;
+            white-space:nowrap;">Result</th>
+          ${state.players.map(p => `
+            <th style="padding:.4rem .4rem;text-align:center;min-width:3.5rem;">
+              ${avatarHtml(p, 22)}
+            </th>`).join('')}
+          <th style="padding:.4rem .4rem;text-align:center;min-width:3.5rem;">
+            ${avatarHtml(null, 22)}
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        ${games.map(game => {
+          const res = state.results[game.id];
+          const ko = isKnockoutGame(game.id);
+          const gameLabel = ko
+            ? `${FLAGS[game.home]||''}${FLAGS[game.away]||''} ${esc(game.round||'KO')}`
+            : `${FLAGS[game.home]||''}${FLAGS[game.away]||''} ${game.g}·MD${game.md}`;
+          return `
+<tr style="border-bottom:1px solid rgba(255,255,255,.04);">
+  <td style="padding:.4rem .6rem;color:#94a3b8;white-space:nowrap;font-size:.72rem;">
+    ${gameLabel}
+  </td>
+  <td style="padding:.4rem .6rem;text-align:center;font-weight:700;
+    font-family:'Courier New',monospace;white-space:nowrap;">
+    ${res
+      ? `<span style="color:#4ade80;">${fmtResult(res, ko)}</span>`
+      : `<span style="color:#475569;">?–?</span>`}
+  </td>
+  ${state.players.map(p => {
+    const pick = sessData.picks[p.id] && sessData.picks[p.id][game.id];
+    if (!pick) return `<td style="padding:.4rem;text-align:center;color:#475569;">—</td>`;
+    let badge = '', pts = null;
+    if (res) {
+      pts = scoreGamePick(pick, res, game.id);
+      badge = Math.floor(pts) === 3 ? 'badge-exact' : pts > 0 ? 'badge-res' : 'badge-miss';
+    } else {
+      badge = 'badge-pend';
+    }
+    return `<td style="padding:.4rem;text-align:center;">
+      <span class="${badge}" style="font-family:'Courier New',monospace;font-size:.75rem;white-space:nowrap;">
+        ${fmtPick(pick, ko)}${pts !== null ? ' +'+fmtPts(pts) : ''}
+      </span>
+    </td>`;
+  }).join('')}
+  <!-- Bot -->
+  <td style="padding:.4rem;text-align:center;">
+    ${(() => {
+      const botPick = getBotGamePick(game.id);
+      let badge = '', pts = null;
+      if (res) {
+        pts = scoreGamePick(botPick, res, game.id);
+        badge = Math.floor(pts) === 3 ? 'badge-exact' : pts > 0 ? 'badge-res' : 'badge-miss';
+      } else { badge = 'badge-pend'; }
+      return `<span class="${badge}" style="font-family:'Courier New',monospace;
+        font-size:.75rem;color:#a5b4fc;white-space:nowrap;">${fmtBot(game)}${pts!==null?' +'+fmtPts(pts):''}</span>`;
+    })()}
+  </td>
+</tr>`;
+        }).join('')}
+        <!-- Session totals row -->
+        <tr style="border-top:1px solid var(--border);background:rgba(255,255,255,.03);">
+          <td colspan="2" style="padding:.45rem .6rem;font-size:.72rem;font-weight:700;
+            color:#64748b;">SESSION POINTS</td>
+          ${state.players.map(p => {
+            const pts = getPlayerSessionPoints(p.id, sess.key);
+            return `<td style="padding:.45rem .4rem;text-align:center;font-weight:800;
+              font-family:'Courier New',monospace;font-size:.9rem;
+              color:${pts !== null ? '#4ade80' : '#475569'};">
+              ${fmtPts(pts)}
+            </td>`;
+          }).join('')}
+          <td style="padding:.45rem .4rem;text-align:center;font-weight:800;
+            font-family:'Courier New',monospace;font-size:.9rem;color:#a5b4fc;">
+            ${(() => { const pts = getBotSessionPoints(sess.key); return fmtPts(pts); })()}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</details>`;
+}).join('')}
+
+<div style="margin-top:1rem;padding:.875rem;border-radius:.75rem;
+  background:rgba(255,255,255,.03);border:1px solid var(--border);font-size:.78rem;color:#64748b;">
+  <strong style="color:#94a3b8;">Scoring:</strong> +3 pts exact score · +1 pt correct result · +0 miss · <span style="color:#a5b4fc;">KO bonus +|pen diff|÷10</span>
+  <br><span style="color:#facc15;">⚠️ Fewest points wins</span> — points accumulate from correct predictions; lower total = better rank.
+</div>
+`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MAIN RENDER
+// ═══════════════════════════════════════════════════════════════
+
+function render() {
+  updateNav();
+  if (!state.started) {
+    state.view = 'setup';
+    renderSetup();
+    return;
+  }
+  switch (state.view) {
+    case 'setup':     renderSetup();      break;
+    case 'pick':      renderPick();       break;
+    case 'admin':     window.renderAdmin ? window.renderAdmin() : renderAdmin(); break;
+    case 'board':     renderLeaderboard(); break;
+    default:          renderPick();       break;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ADMIN INPUT PATCH — fix the double-input result save
+// ═══════════════════════════════════════════════════════════════
+
+// Override renderAdmin to use properly ID'd inputs + KO support
+(function patchAdmin() {
+  window.renderAdmin = function() {
+    const app = document.getElementById('app');
+    const activeSessions = getActiveSessions();
+
+    const koScheduled = KO_BRACKET_TEMPLATE.filter(t => (state.knockoutGames||[]).some(g => g.id === t.id)).length;
+
+  app.innerHTML = `
+<div style="margin-bottom:1.25rem;">
+  <h2 style="font-size:1.2rem;font-weight:800;color:#f1f5f9;margin:0 0 .25rem;">Results &amp; Admin</h2>
+  <p style="font-size:.82rem;color:#94a3b8;margin:0;">
+    Results auto-fetch on startup and while games are active. KO bracket builds itself from group results.
+  </p>
+</div>
+
+<!-- ESPN status bar -->
+<div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;
+  padding:.55rem .875rem;border-radius:.625rem;
+  background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);">
+  <span style="font-size:.78rem;color:#a5b4fc;font-weight:600;">🌐 ESPN auto-fetch</span>
+  <span id="espn-status" style="font-size:.72rem;color:#64748b;">
+    ${_lastFetch ? `Last checked: ${new Date(_lastFetch).toLocaleTimeString()}` : 'Checking…'}
+  </span>
+  <button onclick="fetchESPN(true)" style="margin-left:auto;background:rgba(99,102,241,.2);
+    color:#a5b4fc;border:1px solid rgba(99,102,241,.35);border-radius:.375rem;
+    padding:.3rem .75rem;font-size:.78rem;font-weight:600;cursor:pointer;">
+    🔄 Fetch Now
+  </button>
+</div>
+${activeSessions.map((sess, si) => {
+  const games = getSessionGames(sess.key);
+  const sessData = state.sessions[sess.key];
+  const allR = games.every(g => state.results[g.id]);
+  const someR = games.some(g => state.results[g.id]);
+  const hasPicks = sessData && state.players.some(p => sessData.picks[p.id]);
+  const openIt = hasPicks && !allR;
+  const koSess = !!sess.knockout;
+  return `
+<details ${openIt ? 'open' : ''} style="margin-bottom:.7rem;">
+  <summary style="cursor:pointer;list-style:none;padding:.7rem 1rem;border-radius:.75rem;
+    background:var(--bg-card);border:1px solid var(--border);
+    display:flex;align-items:center;gap:.75rem;user-select:none;">
+    <span style="font-weight:700;color:#f1f5f9;font-size:.9rem;">
+      ${koSess ? '⚽ KO' : `Session ${si+1}`}: ${sess.label}
+    </span>
+    <span style="font-size:.72rem;color:#64748b;">${games.length} game${games.length!==1?'s':''}</span>
+    ${allR
+      ? `<span style="margin-left:auto;font-size:.7rem;color:#4ade80;background:rgba(22,163,74,.12);
+          padding:.15rem .45rem;border-radius:.25rem;border:1px solid rgba(22,163,74,.25);">All in ✓</span>`
+      : someR
+      ? `<span style="margin-left:auto;font-size:.7rem;color:#facc15;background:rgba(234,179,8,.1);
+          padding:.15rem .45rem;border-radius:.25rem;border:1px solid rgba(234,179,8,.2);">Partial</span>`
+      : `<span style="margin-left:auto;font-size:.7rem;color:#64748b;">Pending</span>`}
+  </summary>
+  <div style="border:1px solid var(--border);border-top:none;border-radius:0 0 .75rem .75rem;
+    background:rgba(255,255,255,.02);">
+    ${games.map(game => {
+      const res = state.results[game.id];
+      const isKO = isKnockoutGame(game.id);
+      const isDraw = res && res.h === res.a;
+      const gameLabel = isKO
+        ? `${esc(game.round||'KO')} · ${esc(game.home)} vs ${esc(game.away)}`
+        : `G${game.g}·MD${game.md}`;
+      return `
+<div style="padding:.65rem 1rem;border-bottom:1px solid rgba(255,255,255,.04);">
+  <div style="display:flex;align-items:center;gap:.75rem;">
+    <div style="display:flex;align-items:center;gap:.4rem;flex:1;min-width:0;overflow:hidden;">
+      ${teamFlagHtml(game.home, 22)}
+      <span style="font-size:.82rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;
+        white-space:nowrap;">${esc(game.home)}</span>
+      <span style="font-size:.7rem;color:#475569;flex-shrink:0;margin:0 .15rem;">vs</span>
+      <span style="font-size:.82rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;
+        white-space:nowrap;">${esc(game.away)}</span>
+      ${teamFlagHtml(game.away, 22)}
+    </div>
+    <div style="display:flex;align-items:center;gap:.4rem;flex-shrink:0;">
+      <input type="number" id="res-h-${game.id}" class="score-in" min="0" max="30"
+        value="${res !== undefined ? res.h : ''}" placeholder="–"
+        style="width:2.8rem;">
+      <span style="color:#64748b;font-weight:700;">–</span>
+      <input type="number" id="res-a-${game.id}" class="score-in" min="0" max="30"
+        value="${res !== undefined ? res.a : ''}" placeholder="–"
+        style="width:2.8rem;">
+      ${res !== undefined ? `<span style="color:#4ade80;font-size:.85rem;">✓</span>` :
+        `<span style="color:transparent;font-size:.85rem;">✓</span>`}
+    </div>
+    <div style="font-size:.65rem;color:#475569;min-width:3.5rem;text-align:right;flex-shrink:0;">
+      ${gameLabel}
+    </div>
+  </div>
+  ${isKO ? `
+  <div id="admin-pen-${game.id}" style="display:${isDraw ? 'flex' : 'none'};
+    align-items:center;gap:.5rem;margin-top:.5rem;padding:.45rem .6rem;
+    background:rgba(99,102,241,.07);border-radius:.4rem;border:1px solid rgba(99,102,241,.2);
+    flex-wrap:wrap;">
+    <span style="font-size:.7rem;color:#a5b4fc;font-weight:700;flex-shrink:0;">Penalties:</span>
+    <input type="number" id="res-ph-${game.id}" class="score-in" min="0" max="20"
+      value="${res && res.ph !== undefined ? res.ph : ''}" placeholder="H pens"
+      style="width:4rem;font-size:.78rem;">
+    <span style="color:#64748b;font-weight:700;">–</span>
+    <input type="number" id="res-pa-${game.id}" class="score-in" min="0" max="20"
+      value="${res && res.pa !== undefined ? res.pa : ''}" placeholder="A pens"
+      style="width:4rem;font-size:.78rem;">
+  </div>` : ''}
+</div>`;
+    }).join('')}
+  </div>
+</details>`;
+}).join('')}
+
+<!-- KO Bracket Status -->
+<details style="margin-bottom:.7rem;">
+  <summary style="cursor:pointer;list-style:none;padding:.7rem 1rem;border-radius:.75rem;
+    background:var(--bg-card);border:1px solid rgba(99,102,241,.3);
+    display:flex;align-items:center;gap:.75rem;user-select:none;">
+    <span style="font-weight:700;color:#a5b4fc;font-size:.9rem;">⚽ KO Bracket</span>
+    <span style="font-size:.72rem;color:#64748b;">
+      ${koScheduled} / ${KO_BRACKET_TEMPLATE.length} games scheduled
+    </span>
+    <span style="margin-left:auto;font-size:.72rem;padding:.15rem .45rem;border-radius:.25rem;
+      ${koScheduled === KO_BRACKET_TEMPLATE.length
+        ? 'background:rgba(22,163,74,.12);color:#4ade80;border:1px solid rgba(22,163,74,.25);'
+        : koScheduled > 0
+        ? 'background:rgba(234,179,8,.1);color:#facc15;border:1px solid rgba(234,179,8,.2);'
+        : 'color:#64748b;'}">
+      ${koScheduled === KO_BRACKET_TEMPLATE.length ? 'Complete ✓' : koScheduled > 0 ? 'In progress' : 'Group stage'}
+    </span>
+  </summary>
+  <div style="border:1px solid rgba(99,102,241,.3);border-top:none;border-radius:0 0 .75rem .75rem;
+    background:rgba(99,102,241,.03);padding:.6rem .75rem;">
+    <div style="font-size:.7rem;color:#64748b;margin-bottom:.6rem;">
+      KO games are generated automatically as group results come in. No manual entry needed.
+    </div>
+    ${(() => {
+      const rounds = ['Round of 32','Round of 16','Quarter-final','Semi-final','3rd Place','Final'];
+      return rounds.map(rnd => {
+        const games = KO_BRACKET_TEMPLATE.filter(t => t.round === rnd);
+        const scheduled = games.filter(t => (state.knockoutGames||[]).some(g => g.id === t.id));
+        return `
+<div style="margin-bottom:.5rem;">
+  <div style="font-size:.68rem;font-weight:700;color:#64748b;letter-spacing:.05em;
+    margin-bottom:.3rem;display:flex;align-items:center;gap:.5rem;">
+    <span>${rnd.toUpperCase()}</span>
+    <span style="color:${scheduled.length===games.length?'#4ade80':'#475569'};">
+      ${scheduled.length}/${games.length}
+    </span>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:.2rem;">
+    ${games.map(t => {
+      const ko = (state.knockoutGames||[]).find(g => g.id === t.id);
+      const homeLabel = ko ? esc(ko.home) : `<span style="color:#475569;">${esc(t.homeSlot)}</span>`;
+      const awayLabel = ko ? esc(ko.away) : `<span style="color:#475569;">${esc(t.awaySlot)}</span>`;
+      const res = ko && state.results[ko.id];
+      const resLabel = res ? `<span style="color:#4ade80;font-family:'Courier New',monospace;">
+        ${res.h}–${res.a}${res.ph!=null?' ('+res.ph+'–'+res.pa+'p)':''}</span>` : '';
+      return `
+<div style="display:flex;align-items:center;gap:.5rem;padding:.25rem .4rem;border-radius:.3rem;
+  font-size:.75rem;background:${ko?'rgba(22,163,74,.06)':'rgba(255,255,255,.02)'};
+  border:1px solid ${ko?'rgba(22,163,74,.15)':'rgba(255,255,255,.05)'};">
+  <span style="color:${ko?'#4ade80':'#475569'};flex-shrink:0;font-size:.65rem;">${ko?'✓':'○'}</span>
+  <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+    ${homeLabel} <span style="color:#475569;">vs</span> ${awayLabel}
+  </span>
+  <span style="font-size:.68rem;color:#475569;flex-shrink:0;">${t.date.slice(5)}</span>
+  ${resLabel ? `<span style="flex-shrink:0;">${resLabel}</span>` : ''}
+</div>`;
+    }).join('')}
+  </div>
+</div>`;
+      }).join('');
+    })()}
+  </div>
+</details>
+
+<div style="margin-top:1rem;padding:.8rem;border-radius:.75rem;background:rgba(255,255,255,.03);
+  border:1px solid var(--border);font-size:.75rem;color:#64748b;">
+  Results are saved when you move focus out of each input (Tab or click away).
+  For knockout draws, penalty scores appear automatically.
+</div>
+<div style="margin-top:1.5rem;text-align:center;">
+  <button class="btn-danger" onclick="resetGame()">⚠️ Reset Entire Game</button>
+</div>`;
+
+    // Wire up all result inputs (group + KO)
+    setTimeout(() => {
+      const allGames = [...GROUP_GAMES, ...(state.knockoutGames||[])];
+      for (const game of allGames) {
+        const hEl = document.getElementById(`res-h-${game.id}`);
+        const aEl = document.getElementById(`res-a-${game.id}`);
+        if (!hEl || !aEl) continue;
+        const isKO = isKnockoutGame(game.id);
+
+        const save = () => {
+          const phEl = document.getElementById(`res-ph-${game.id}`);
+          const paEl = document.getElementById(`res-pa-${game.id}`);
+          saveResult(game.id, hEl.value, aEl.value,
+            phEl ? phEl.value : undefined,
+            paEl ? paEl.value : undefined);
+        };
+
+        const updatePenVis = () => {
+          const penDiv = document.getElementById(`admin-pen-${game.id}`);
+          if (penDiv) {
+            const h = parseInt(hEl.value), a = parseInt(aEl.value);
+            penDiv.style.display = (!isNaN(h) && !isNaN(a) && h === a) ? 'flex' : 'none';
+          }
+          save();
+        };
+
+        if (isKO) {
+          hEl.addEventListener('change', updatePenVis);
+          aEl.addEventListener('change', updatePenVis);
+          const phEl = document.getElementById(`res-ph-${game.id}`);
+          const paEl = document.getElementById(`res-pa-${game.id}`);
+          if (phEl) phEl.addEventListener('change', save);
+          if (paEl) paEl.addEventListener('change', save);
+        } else {
+          hEl.addEventListener('change', save);
+          aEl.addEventListener('change', save);
+        }
+      }
+    }, 0);
+  };
+})();
+
+function adminAddKO() {
+  const round = document.getElementById('ko-round').value.trim();
+  const home  = document.getElementById('ko-home').value.trim();
+  const away  = document.getElementById('ko-away').value.trim();
+  const date  = document.getElementById('ko-date').value.trim();
+  const errEl = document.getElementById('ko-add-err');
+  if (!home || !away || !date) {
+    errEl.textContent = 'Please fill in home team, away team, and date.';
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+  addKnockoutGame(round, home, away, date);
+}
+
+function adminRemoveKO(gameId) {
+  if (!confirm('Remove this knockout game? Any picks and results for it will also be deleted.')) return;
+  state.knockoutGames = (state.knockoutGames||[]).filter(g => g.id !== gameId);
+  delete state.results[gameId];
+  // Remove picks from all sessions
+  for (const sess of Object.values(state.sessions)) {
+    for (const picks of Object.values(sess.picks)) {
+      delete picks[gameId];
+    }
+  }
+  saveState();
+  window.renderAdmin();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════
+// ESPN AUTO-FETCH
+// ═══════════════════════════════════════════════════════════════
+
+const ESPN_SCOREBOARD =
+  'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard';
+
+// Map ESPN display names → our team names where they differ
+const ESPN_TEAM_MAP = {
+  'united states':                'USA',
+  'us':                           'USA',
+  'bosnia and herzegovina':       'Bosnia and Herz.',
+  'bosnia-herzegovina':           'Bosnia and Herz.',
+  'bosnia & herzegovina':         'Bosnia and Herz.',
+  'czech republic':               'Czechia',
+  'ivory coast':                  'Ivory Coast',
+  "cote d'ivoire":                'Ivory Coast',
+  'côte d\'ivoire':               'Ivory Coast',
+  'korea republic':               'South Korea',
+  'republic of korea':            'South Korea',
+  'cabo verde':                   'Cape Verde',
+  'saudi arabia':                 'Saudi Arabia',
+  'new zealand':                  'New Zealand',
+  'dr congo':                     'DR Congo',
+  'democratic republic of congo': 'DR Congo',
+  'congo dr':                     'DR Congo',
+  "congo, the democratic republic of the": 'DR Congo',
+  'curacao':                      'Curaçao',
+};
+
+function espnNorm(name) {
+  if (!name) return '';
+  return ESPN_TEAM_MAP[name.toLowerCase().trim()] || name;
+}
+
+function matchGameToESPN(espnHome, espnAway) {
+  const h = espnNorm(espnHome), a = espnNorm(espnAway);
+  const all = [...GROUP_GAMES, ...(state.knockoutGames || [])];
+  return (
+    all.find(g => g.home.toLowerCase() === h.toLowerCase() &&
+                  g.away.toLowerCase() === a.toLowerCase()) ||
+    all.find(g => g.home.toLowerCase() === a.toLowerCase() &&
+                  g.away.toLowerCase() === h.toLowerCase())
+  );
+}
+
+let _lastFetch = null;   // timestamp of last successful call
+let _fetchTimer = null;  // setTimeout handle (smart scheduler)
+let _fetching  = false;  // debounce flag
+
+async function fetchESPN(showFeedback = false) {
+  if (_fetching) return 0;
+  _fetching = true;
+
+  const todayStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
+  // Collect dates: today + any past game dates that still have no result
+  const dates = new Set([todayStr.replace(/-/g, '')]);
+  for (const g of [...GROUP_GAMES, ...(state.knockoutGames || [])]) {
+    if (!state.results[g.id] && g.date && g.date <= todayStr) {
+      dates.add(g.date.replace(/-/g, ''));
+    }
+  }
+
+  let updated = 0;
+
+  for (const dateStr of dates) {
+    try {
+      const resp = await fetch(`${ESPN_SCOREBOARD}?dates=${dateStr}`,
+        { signal: AbortSignal.timeout(8000) });
+      if (!resp.ok) continue;
+      const data = await resp.json();
+
+      for (const ev of (data.events || [])) {
+        const comp = ev.competitions?.[0];
+        if (!comp?.status?.type?.completed) continue;
+
+        const hc = comp.competitors?.find(c => c.homeAway === 'home');
+        const ac = comp.competitors?.find(c => c.homeAway === 'away');
+        if (!hc || !ac) continue;
+
+        const scoreH = parseInt(hc.score), scoreA = parseInt(ac.score);
+        if (isNaN(scoreH) || isNaN(scoreA)) continue;
+
+        const game = matchGameToESPN(
+          hc.team?.displayName || hc.team?.name || '',
+          ac.team?.displayName || ac.team?.name || ''
+        );
+        if (!game) continue;
+
+        const cur = state.results[game.id];
+        const newRes = { h: scoreH, a: scoreA };
+
+        // Preserve manually-entered penalties if 90-min score is unchanged
+        if (cur && cur.h === scoreH && cur.a === scoreA && cur.ph != null) {
+          newRes.ph = cur.ph; newRes.pa = cur.pa;
+        }
+
+        // Try to parse penalty result from ESPN notes (e.g. "Brazil wins 4-3 on penalties")
+        if (scoreH === scoreA) {
+          for (const note of (comp.notes || [])) {
+            const txt = note.headline || note.text || '';
+            const m = txt.match(/(\S[\w\s]*?)\s+wins\s+(\d+)[–\-](\d+)\s+on\s+pen/i);
+            if (m) {
+              const winner = espnNorm(m[1].trim());
+              const pA = parseInt(m[2]), pB = parseInt(m[3]);
+              const winHome = game.home.toLowerCase() === winner.toLowerCase();
+              newRes.ph = winHome ? pA : pB;
+              newRes.pa = winHome ? pB : pA;
+              break;
+            }
+          }
+        }
+
+        // Only update if something changed
+        if (!cur || cur.h !== newRes.h || cur.a !== newRes.a ||
+            cur.ph !== newRes.ph || cur.pa !== newRes.pa) {
+          state.results[game.id] = newRes;
+          updated++;
+        }
+      }
+    } catch (e) {
+      console.warn('ESPN fetch error:', e.message);
+    }
+  }
+
+  _lastFetch = Date.now();
+  _fetching = false;
+
+  if (updated > 0) {
+    syncKOBracket(); // unlock any new KO games
+    saveState();
+    if (showFeedback) showToast(`✓ ${updated} result${updated !== 1 ? 's' : ''} updated from ESPN`, 'ok');
+    // Don't re-render admin (would wipe in-progress manual inputs); re-render everything else
+    if (state.view !== 'admin') render();
+  } else if (showFeedback) {
+    showToast('ESPN: no new completed results found', 'ok');
+  }
+
+  // Refresh the status chip in the admin panel if it's open
+  const chip = document.getElementById('espn-status');
+  if (chip) chip.textContent = `Last checked: ${new Date(_lastFetch).toLocaleTimeString()}`;
+
+  scheduleNextFetch(); // self-schedule based on pending games
+  return updated;
+}
+
+// Smart scheduler: polls often when games are active, idle otherwise.
+// Uses setTimeout (not setInterval) so each cycle re-evaluates pending state.
+function scheduleNextFetch() {
+  if (_fetchTimer) clearTimeout(_fetchTimer);
+  _fetchTimer = null;
+
+  const todayStr     = new Date().toISOString().split('T')[0];
+  const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+  const allGames     = [...GROUP_GAMES, ...(state.knockoutGames || [])];
+
+  const pendingToday     = allGames.some(g => g.date === todayStr     && !state.results[g.id]);
+  const pendingYesterday = allGames.some(g => g.date === yesterdayStr && !state.results[g.id]);
+
+  if (pendingToday) {
+    // Active game day — poll every 2 min (buffer for ET + pen shootout)
+    _fetchTimer = setTimeout(() => fetchESPN(false), 2 * 60 * 1000);
+  } else if (pendingYesterday) {
+    // Games from yesterday still outstanding (very late finishers) — check every 5 min
+    _fetchTimer = setTimeout(() => fetchESPN(false), 5 * 60 * 1000);
+  }
+  // No nearby pending games → startup fetch only, no background polling
+}
+
+function startAutoFetch() {
+  fetchESPN(false); // immediate on startup; scheduleNextFetch() called at end of fetchESPN
+}
+
+function init() {
+  // If game is started and we have a current session, init currentPicks
+  if (state.started) {
+    syncKOBracket(); // resolve any bracket slots that have results
+    const cur = getCurrentSession();
+    if (cur) {
+      const picker = getCurrentPicker(cur.sess.key);
+      if (picker) {
+        resetCurrentPicks(cur.sess.key);
+        window._lastPickingKey = `${cur.sess.key}::${picker.id}`;
+      }
+    }
+    startAutoFetch(); // kick off background result polling
+  }
+  // Default view
+  if (!state.view) state.view = state.started ? 'pick' : 'setup';
+  render();
+}
+
+init();
+</script>
+</body>
+</html>

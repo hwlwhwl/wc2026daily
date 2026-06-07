@@ -1,0 +1,32 @@
+
+
+Tighten up the display a bit,  esp head to head
+Fifa rankings from here: https://inside.fifa.com/fifa-world-ranking/men
+Picking tiebreakers, make them dragable, not just arrows to move
+
+New list
+
+
+Repicker 
+- after group stage
+
+Tests
+√ simulation of espn feed 
+√ make sure it works on non Macs
+
+Complete
+Make the boxes where goals get entered look like a goal instead of text box
+Penalty scores need to be in range of possible 
+Penalty boxes also shouldn’t default to dark mode
++- buttons by penalties
+Wtf _metadata
+Sync from hub should be automatic (can run once an hour while open and then stop once the tournament begins)
+Make people load images when they submit, option to take a picture (64x64) Use that within each presentation of data
+Lock down submissions once the first game sbegin
+Remove word ‘Fifa’ from rankings 
+Add game location and weather from that location in the header for each game
+Map view
+
+
+GitHub token: (removed — do not store tokens in files)
+
