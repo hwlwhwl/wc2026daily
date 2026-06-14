@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { GROUP_GAMES, FLAGS, getActiveSessions } from '@/lib/daily/games';
 import type { PickEntry } from '@/lib/daily/scoring';
+import { FIFA_RANK } from '@/lib/daily/dossiers';
+import DossierModal from '@/app/daily/components/DossierModal';
 
 interface User {
   id: string;
@@ -125,6 +127,7 @@ export default function DailyPickPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [pollCountdown, setPollCountdown] = useState(10);
+  const [dossierGame, setDossierGame] = useState<{ home: string; away: string } | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -383,7 +386,13 @@ export default function DailyPickPage() {
                     return (
                       <tr key={gid} className="border-b border-white/5">
                         <td className="py-1.5 pr-3 text-slate-300 whitespace-nowrap">
-                          {hFlag} {game.home} vs {aFlag} {game.away}
+                          <button
+                            type="button"
+                            onClick={() => setDossierGame({ home: game.home, away: game.away })}
+                            className="text-left hover:text-blue-400 transition-colors"
+                          >
+                            {hFlag} {game.home} vs {aFlag} {game.away}
+                          </button>
                         </td>
                         {pickOrder
                           .filter((pid) => sessData.submittedBy?.includes(pid))
@@ -410,6 +419,14 @@ export default function DailyPickPage() {
         >
           Refresh now
         </button>
+
+        {dossierGame && (
+          <DossierModal
+            home={dossierGame.home}
+            away={dossierGame.away}
+            onClose={() => setDossierGame(null)}
+          />
+        )}
       </div>
     );
   }
@@ -472,6 +489,14 @@ export default function DailyPickPage() {
                 {game.date}
                 {isKO && <span className="ml-2 text-yellow-500 font-medium">KO</span>}
               </div>
+              <button
+                type="button"
+                onClick={() => setDossierGame({ home: game.home, away: game.away })}
+                className="text-xs text-slate-500 hover:text-blue-400 transition-colors px-2 py-0.5 rounded border border-white/10 hover:border-blue-500/40"
+                title="Team profiles"
+              >
+                ℹ Scout
+              </button>
             </div>
 
             {/* Score input */}
@@ -480,6 +505,9 @@ export default function DailyPickPage() {
                 <div className="font-semibold text-white text-sm">
                   {hFlag} {game.home}
                 </div>
+                {FIFA_RANK[game.home] && (
+                  <div className="text-xs text-slate-600">#{FIFA_RANK[game.home]}</div>
+                )}
               </div>
 
               <div className="flex items-center gap-2">
@@ -492,6 +520,9 @@ export default function DailyPickPage() {
                 <div className="font-semibold text-white text-sm">
                   {aFlag} {game.away}
                 </div>
+                {FIFA_RANK[game.away] && (
+                  <div className="text-xs text-slate-600">#{FIFA_RANK[game.away]}</div>
+                )}
               </div>
             </div>
 
@@ -544,6 +575,15 @@ export default function DailyPickPage() {
       >
         {submitting ? 'Submitting…' : 'Submit Picks →'}
       </button>
+
+      {/* Dossier modal */}
+      {dossierGame && (
+        <DossierModal
+          home={dossierGame.home}
+          away={dossierGame.away}
+          onClose={() => setDossierGame(null)}
+        />
+      )}
     </div>
   );
 }
